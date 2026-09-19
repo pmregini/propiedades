@@ -89,9 +89,7 @@
         .btn-glass { border: none; font-weight: 600; font-size: 0.85rem; min-height: 44px; padding: 8px 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; flex: 1 1 auto; }
         .btn-glass:active { opacity: 0.7; }
         
-        .btn-select-all { background: rgba(10, 132, 255, 0.12); color: var(--accent); }
         .btn-map { background: rgba(90, 200, 250, 0.12); color: var(--teal); }
-        .btn-itinerary { background: rgba(48, 209, 88, 0.12); color: var(--whatsapp); }
 
         .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         
@@ -129,9 +127,6 @@
         .cost-item:last-child { border-bottom: none; }
         .cost-item-total { font-weight: 700; color: var(--accent); background: rgba(10, 132, 255, 0.04); }
 
-        .itinerary-toggle { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--text-main); min-height: 44px; }
-        .itinerary-toggle input { margin: 0; width: 18px; height: 18px; accent-color: var(--whatsapp); cursor: pointer; }
-
         .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; border-top: 0.5px solid var(--border-light); padding-top: 12px; }
         .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 36px; border-radius: 10px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
         .action-btn:active, .link-btn:active, .wa-btn:active, .school-btn:active { transform: scale(0.96); }
@@ -155,7 +150,7 @@
         .modal-overlay.active .modal-content { transform: translateY(0); }
         
         .modal-header { padding: 16px 20px; border-bottom: 0.5px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
-        .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; }
+        .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; display: flex; align-items: center; }
         .close-modal { background: var(--badge-bg); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; color: var(--text-muted); transition: background 0.2s; }
         .close-modal:active { background: var(--border); }
         #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); min-height: 50vh; }
@@ -175,7 +170,8 @@
         <header>
             <h1>
                 Real Estate Sync
-                <div class="cloud-sync-wrap">
+                <span id="topTotalCount" style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal; margin-left: 8px;"></span>
+                <div class="cloud-sync-wrap" style="margin-left: 6px;">
                     <button class="btn-cloud-sync" id="btnCloudSync" onclick="manualSync()" title="Sincronizar">🔄</button>
                     <span class="sync-dot" id="syncDot"></span>
                 </div>
@@ -215,9 +211,7 @@
                 <option value="price_desc">Precio (Mayor a Menor)</option>
             </select>
             
-            <button class="btn-glass btn-select-all" onclick="selectAllItinerary()">☑️ Incluir Todos</button>
-            <button class="btn-glass btn-map" onclick="openMapModal()">🗺️ Mapa</button>
-            <button class="btn-glass btn-itinerary" onclick="generateItineraryMapsLink()">🚗 Ruta GPS (<span id="itineraryCount">0</span>)</button>
+            <button class="btn-glass btn-map" onclick="openMapModal()">🗺️ Abrir Mapa Interactívo</button>
         </div>
 
         <div class="list-container" id="inventoryList"></div>
@@ -236,7 +230,7 @@
     <div class="modal-overlay" id="mapModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Ubicaciones</h2>
+                <h2>Ubicaciones <span id="mapPinCount" style="font-size:0.9rem; color:var(--text-muted); font-weight:normal; margin-left:8px;"></span></h2>
                 <button class="close-modal" onclick="closeMapModal()">✕</button>
             </div>
             <div id="mapContainer"></div>
@@ -277,7 +271,6 @@
         const sortType = document.getElementById('sortType');
 
         let globalState = { updatedAt: 0, properties: [] };
-        let itineraryIds = new Set();
         let dolarBlueRate = 1300; 
 
         let mapInstance = null;
@@ -656,8 +649,6 @@
         window.deleteProperty = function(id) {
             if(!confirm("¿Remover esta propiedad?")) return;
             globalState.properties = globalState.properties.filter(p => p.id !== id);
-            itineraryIds.delete(id);
-            updateItineraryCount();
             saveLocalDb();
             renderList();
         };
@@ -672,12 +663,11 @@
             if (newPrecio === null) return; 
             const newExpensas = prompt("Expensas:", prop.expensas || "");
             if (newExpensas === null) return;
-            const newCoords = prompt("Coordenadas GPS (Opcional, formato lat,lon):", (prop.latitude && prop.longitude) ? `${prop.latitude}, ${prop.longitude}` : "");
+            
+            const newCoords = prompt("Coordenadas GPS (lat,lon) o dejá en blanco para auto-buscar:", (prop.latitude && prop.longitude) ? `${prop.latitude}, ${prop.longitude}` : "");
 
             if (newDireccion.trim() !== (prop.direccion || "").trim()) {
-                if (!newCoords || newCoords.trim() === "") {
-                    prop.latitude = ""; prop.longitude = "";
-                }
+                prop.latitude = ""; prop.longitude = "";
             }
 
             prop.direccion = newDireccion; 
@@ -690,6 +680,8 @@
                     prop.latitude = match[1];
                     prop.longitude = match[2];
                 }
+            } else if (newCoords === "") {
+                prop.latitude = ""; prop.longitude = "";
             }
 
             saveLocalDb();
@@ -699,7 +691,7 @@
         window.fixLocation = function(id) {
             const prop = globalState.properties.find(p => p.id === id);
             if(!prop) return;
-            const input = prompt(`Ingresa las coordenadas exactas de Google Maps para ${prop.direccion}:\nEjemplo: -34.5085, -58.4988`, "");
+            const input = prompt(`Pegá las coordenadas GPS exactas para ${prop.direccion}:\nEjemplo: -34.5085, -58.4988`, "");
             if(!input) return;
             
             const match = input.match(/(-?\d+\.\d+)[^\d-]+(-?\d+\.\d+)/);
@@ -707,7 +699,7 @@
                 prop.latitude = match[1];
                 prop.longitude = match[2];
                 saveLocalDb();
-                toast("Coordenadas actualizadas exitosamente.", "success");
+                toast("Coordenadas guardadas.", "success");
                 closeMapModal();
                 setTimeout(openMapModal, 300);
                 renderList();
@@ -735,28 +727,6 @@
             saveLocalDb();
             renderList();
         };
-
-        window.toggleItinerary = function(id) {
-            if (itineraryIds.has(id)) itineraryIds.delete(id);
-            else itineraryIds.add(id);
-            updateItineraryCount();
-        };
-
-        function selectAllItinerary() {
-            const currentList = getFilteredProperties();
-            if (currentList.length === 0) return;
-            const allSelected = currentList.every(p => itineraryIds.has(p.id));
-            currentList.forEach(p => {
-                if (allSelected) itineraryIds.delete(p.id);
-                else itineraryIds.add(p.id);
-            });
-            updateItineraryCount();
-            renderList();
-        }
-
-        function updateItineraryCount() {
-            document.getElementById('itineraryCount').innerText = itineraryIds.size;
-        }
 
         function openAddressInGoogleMaps(address) {
             let a = address.replace(/\b[a-zA-Z]\d{4}[a-zA-Z]{0,3}\b/g, '').replace(/\s+/g, ' ').trim();
@@ -786,6 +756,7 @@
                 if (l.startsWith('p')) return 'Pasaje';
                 return m;
             });
+            clean = clean.replace(/\bJ\.\s*/gi, 'José ');
 
             if (level === 0) {
                 clean = clean.replace(/\s+al\s+(\d+)/gi, ' $1');
@@ -859,16 +830,18 @@
         function addPropertyMarker(p, lat, lon, isApprox = false) {
             const approxTag = isApprox ? `
                 <div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:2px;">⚠️ Ubicación aprox.</div>
-                <button onclick="fixLocation('${p.id}')" style="margin-top:4px; font-size:10px; padding:4px 8px; border-radius:6px; border:1px solid var(--warning); background:rgba(255,149,0,0.1); color:var(--warning); cursor:pointer; width:100%; font-weight:600;">Corregir Coordenadas</button>
-            ` : '';
+            ` : `<div style="font-size:10px;color:var(--whatsapp);font-weight:600;margin-top:2px;">✓ Ubicación exacta</div>`;
             const gpsUrl = generateGpsLink(p, lat, lon);
             const popupContent = `
-                <div style="color:#000; font-family:-apple-system, BlinkMacSystemFont, sans-serif; max-width:200px;">
+                <div style="color:#000; font-family:-apple-system, BlinkMacSystemFont, sans-serif; max-width:210px;">
                     ${p.imagen ? `<img src="${p.imagen}" style="width:100%;height:100px;object-fit:cover;border-radius:10px;margin-bottom:8px;">` : ''}
                     <strong style="font-size:13px;display:block;">${p.tipo} - ${p.precio}</strong>
                     <div style="font-size:11px;color:#666;margin-bottom:2px;line-height:1.2;">📍 ${p.direccion}</div>
                     ${approxTag}
-                    <a href="${gpsUrl}" target="_blank" style="display:block;text-align:center;margin-top:8px;background:var(--accent);color:white;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS →</a>
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Abrir GPS</a>
+                        ${isApprox ? `<button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>` : `<button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>`}
+                    </div>
                 </div>
             `;
             L.marker([lat, lon]).addTo(markersGroup).bindPopup(popupContent);
@@ -891,7 +864,9 @@
             });
             L.marker([-34.5085, -58.4988], { icon: schoolIcon }).addTo(markersGroup).bindPopup('<b>Colegio San Carlos</b>');
 
-            const targetProps = (itineraryIds.size > 0) ? globalState.properties.filter(p => itineraryIds.has(p.id)) : globalState.properties;
+            const targetProps = globalState.properties;
+            
+            document.getElementById('mapPinCount').innerText = `(${targetProps.length} pines)`;
 
             for (const p of targetProps) {
                 if (p.latitude && p.longitude && !isNaN(parseFloat(p.latitude))) addPropertyMarker(p, parseFloat(p.latitude), parseFloat(p.longitude), false);
@@ -914,27 +889,6 @@
         }
 
         function closeMapModal() { document.getElementById('mapModal').classList.remove('active'); }
-
-        function generateItineraryMapsLink() {
-            if (itineraryIds.size === 0) return toast("Seleccioná propiedades.", "warning");
-            const selectedProps = globalState.properties.filter(p => itineraryIds.has(p.id));
-            const addrs = selectedProps.map(p => {
-                if (p.latitude && p.longitude && !isNaN(parseFloat(p.latitude))) {
-                    return `${p.latitude},${p.longitude}`;
-                }
-                let a = p.direccion || "";
-                a = a.replace(/\b[a-zA-Z]\d{4}[a-zA-Z]{0,3}\b/g, '').replace(/\s+/g, ' ').trim();
-                if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
-                return a;
-            });
-
-            let origin = "-34.5085,-58.4988"; // Colegio San Carlos
-            let destination = (selectedProps.length === 1) ? addrs[0] : addrs[addrs.length - 1];
-            let waypoints = (selectedProps.length === 1) ? [] : addrs.slice(0, -1);
-            let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
-            if (waypoints.length > 0) url += `&waypoints=${waypoints.map(encodeURIComponent).join('|')}`;
-            window.open(url, '_blank');
-        }
 
         function generateWaLink(p) {
             return `https://wa.me/?text=${encodeURIComponent(`Mirá este ${p.tipo} en${p.direccion}.\nValor: ${p.precio}\nLink:${p.url}`)}`;
@@ -998,6 +952,9 @@
         function renderList() {
             const sortTerm = sortType.value;
             let processedProps = getFilteredProperties();
+            
+            const totalSpan = document.getElementById('topTotalCount');
+            if(totalSpan) totalSpan.innerText = `(${globalState.properties.length} prop.)`;
 
             if (sortTerm !== 'date_desc') {
                 processedProps.sort((a, b) => {
@@ -1053,11 +1010,6 @@
                             ${mk("Coch", p.cocheras)}
                         </div>
                         ${generateCostsHtml(p.precio, p.direccion)}
-                        
-                        <label class="itinerary-toggle">
-                            <input type="checkbox" ${itineraryIds.has(p.id) ? 'checked' : ''} onchange="toggleItinerary('${p.id}')">
-                            Incluir en Itinerario de Visita
-                        </label>
                         
                         <div class="card-actions">
                             <a href="${generateWaLink(p)}" target="_blank" class="wa-btn">WA</a>
