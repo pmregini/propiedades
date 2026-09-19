@@ -1,1 +1,891 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Extractor // Web Edition</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root { 
+            --bg: #f8fafc; 
+            --panel: #ffffff; 
+            --text-main: #0f172a; 
+            --text-muted: #64748b; 
+            --accent: #2563eb; 
+            --accent-hover: #1d4ed8;
+            --border: #e2e8f0;
+            --whatsapp: #16a34a;
+            --danger: #dc2626; 
+            --school: #7c3aed;
+            --warning: #d97706;
+            --badge-bg: #f1f5f9;
+            --badge-hl-bg: #eff6ff;
+            --badge-hl-border: #bfdbfe;
+            --badge-hl-text: #1e3a8a;
+            --badge-hl-strong: #2563eb;
+            --input-bg: #ffffff;
+            --star-active: #f59e0b;
+            --star-inactive: #cbd5e1;
+        }
+
+        body.dark-mode {
+            --bg: #0b0f19; 
+            --panel: #151e2e; 
+            --text-main: #f8fafc; 
+            --text-muted: #94a3b8; 
+            --border: #243044;
+            --badge-bg: #1e293b;
+            --badge-hl-bg: #1e3a8a;
+            --badge-hl-border: #3b82f6;
+            --badge-hl-text: #bfdbfe;
+            --badge-hl-strong: #ffffff;
+            --input-bg: #0f172a;
+            --star-active: #fbbf24;
+            --star-inactive: #475569;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: var(--bg); color: var(--text-main); padding: 20px; line-height: 1.5; transition: background 0.25s, color 0.25s; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 14px; }
+        h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+        
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .status-badge { background: var(--badge-hl-bg); color: var(--badge-hl-text); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--badge-hl-border); }
+        #themeToggle { background: transparent; border: 1px solid var(--border); border-radius: 8px; font-size: 1.1rem; padding: 4px 8px; cursor: pointer; color: var(--text-main); margin: 0; width: auto; }
+        #themeToggle:hover { background: var(--badge-bg); }
+
+        .panel { background: var(--panel); padding: 18px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
+        .panel p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px; }
+        
+        .input-group { display: flex; gap: 10px; }
+        input, select, button { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem; outline: none; background: var(--input-bg); color: var(--text-main); }
+        input:focus, select:focus { border-color: var(--accent); }
+        .input-group input { flex-grow: 1; margin: 0; }
+        .input-group button { width: auto; margin: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; border: none; }
+        .input-group button:hover { background: var(--accent-hover); }
+        .input-group button:disabled { background: #9ca3af; cursor: not-allowed; }
+        
+        .alert { padding: 10px 14px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; display: none; font-weight: 500; }
+        .alert.error { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+        .alert.info { background: var(--badge-bg); color: var(--text-main); border: 1px solid var(--border); }
+        
+        .filters-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .filters-grid input { flex: 1 1 200px; }
+        .filters-grid select, .filters-grid button { flex: 0 1 auto; margin-bottom: 0; cursor: pointer; }
+        
+        .btn-select-all { background: #0284c7; color: white; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-select-all:hover { background: #0369a1; }
+
+        .btn-map { background: #0f766e; color: white; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-map:hover { background: #0d9488; }
+
+        .btn-itinerary { background: #10b981; color: white; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-itinerary:hover { background: #059669; }
+        
+        .btn-sync { background: #6366f1; color: white; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-sync:hover { background: #4f46e5; }
+
+        .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        
+        .card { background: var(--panel); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); display: flex; flex-direction: column; border: 1px solid var(--border); overflow: hidden; border-top: 4px solid var(--accent); position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+        
+        .card-img { width: 100%; height: 170px; object-fit: cover; background: var(--badge-bg); border-bottom: 1px solid var(--border); }
+        .card-content { padding: 14px; display: flex; flex-direction: column; flex-grow: 1; }
+        
+        .card-header { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .prop-title { font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .prop-address { font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; cursor: pointer; }
+        .prop-address:hover { color: var(--accent); text-decoration: underline; }
+        
+        .star-rating { display: flex; gap: 2px; font-size: 1rem; cursor: pointer; }
+        .star { color: var(--star-inactive); transition: color 0.15s; }
+        .star.active { color: var(--star-active); }
+
+        .metrics-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .badge { background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; font-size: 0.78rem; color: var(--text-muted); border: 1px solid var(--border); display: flex; align-items: center; gap: 4px; }
+        .badge strong { color: var(--text-main); font-size: 0.82rem; }
+        .badge.highlight { background: var(--badge-hl-bg); border-color: var(--badge-hl-border); color: var(--badge-hl-text); width: 100%; justify-content: space-between; padding: 8px 10px; align-items: flex-start;}
+        .badge.highlight strong { color: var(--badge-hl-strong); font-size: 1.15rem; }
+        .badge-usd-sub { display: block; font-size: 0.78rem; font-weight: 600; color: var(--badge-hl-text); opacity: 0.9; margin-top: 1px;}
+        
+        .badge-interactive { cursor: pointer; border-color: var(--accent); transition: background 0.2s; width: 100%; justify-content: space-between; }
+        .badge-interactive:hover { background: var(--badge-hl-bg); }
+
+        .entry-costs { margin-top: 10px; padding: 10px; background: var(--badge-bg); border-radius: 8px; border: 1px dashed var(--border); font-size: 0.78rem; color: var(--text-main); }
+        .entry-costs h4 { font-size: 0.8rem; margin-bottom: 6px; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+        .entry-costs-grid { display: flex; flex-direction: column; gap: 3px; }
+        .cost-item { display: flex; justify-content: space-between; }
+        .cost-item-total { font-weight: 700; color: var(--accent); border-top: 1px solid var(--border); padding-top: 4px; margin-top: 2px; }
+
+        .itinerary-toggle { margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; color: var(--text-main); background: var(--badge-bg); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); }
+        .itinerary-toggle input { margin: 0; cursor: pointer; }
+
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+        
+        .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 5px 6px; height: 30px; border-radius: 5px; text-decoration: none; cursor: pointer; border: 1px solid transparent; width: 100%; box-sizing: border-box; }
+        
+        .link-btn { background: var(--badge-bg); color: var(--text-main); border-color: var(--border); }
+        .link-btn:hover { background: var(--border); }
+        
+        .wa-btn { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .wa-btn:hover { background: #bbf7d0; }
+
+        .school-btn { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+        .school-btn:hover { background: #ddd6fe; }
+
+        .delete-btn { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .delete-btn:hover { background: #fecaca; }
+        
+        .edit-btn { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .edit-btn:hover { background: #fde68a; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--panel); border-radius: 12px; width: 100%; max-width: 1100px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
+        .modal-header { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
+        .modal-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
+        .close-modal { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main); line-height: 1; padding: 0 4px; }
+        #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); }
+
+        @media (max-width: 900px) {
+            .filters-grid { flex-direction: column; }
+            .filters-grid input, .filters-grid select, .filters-grid button { width: 100%; }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>Real Estate Extractor</h1>
+            <div class="header-actions">
+                <span class="status-badge">Web Client // Static</span>
+                <button id="themeToggle" title="Toggle Theme">🌓</button>
+            </div>
+        </header>
+        
+        <div class="panel">
+            <p>Ingresa la URL de la publicación de ZonaProp, DIC Propiedades o MercadoLibre.</p>
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="URL: https://www..." autocomplete="off" />
+                <button id="extractBtn">Extraer Datos</button>
+            </div>
+            <div id="statusMsg" class="alert"></div>
+        </div>
+
+        <div class="filters-grid">
+            <input type="text" id="filterText" placeholder="Filtrar dirección o tipo..." autocomplete="off">
+            <select id="filterType">
+                <option value="ALL">Todos los tipos</option>
+                <option value="DEPARTAMENTO">Departamento</option>
+                <option value="CASA">Casa</option>
+                <option value="PH">PH</option>
+                <option value="LOTE">Lote / Terreno</option>
+            </select>
+            <select id="filterCurrency">
+                <option value="ALL">Moneda (Todas)</option>
+                <option value="ARS">Pesos ($)</option>
+                <option value="USD">Dólares (USD)</option>
+            </select>
+            <select id="sortType">
+                <option value="date_desc">Más recientes (Default)</option>
+                <option value="ranking_desc">Ranking: Mayor a Menor ⭐</option>
+                <option value="dist_asc">Distancia Colegio: Menor a Mayor 📍</option>
+                <option value="price_asc">Precio: Menor a Mayor</option>
+                <option value="price_desc">Precio: Mayor a Menor</option>
+                <option value="rooms_desc">Más Ambientes</option>
+                <option value="sqm_desc">Más Metros (Totales)</option>
+            </select>
+            <button class="btn-select-all" onclick="selectAllItinerary()">
+                ☑️ Incluir Todos
+            </button>
+            <button class="btn-map" onclick="openMapModal()">
+                🗺️ Ver Mapa
+            </button>
+            <button class="btn-itinerary" onclick="generateItineraryMapsLink()">
+                🚗 Ruta GPS (<span id="itineraryCount">0</span>)
+            </button>
+            <button class="btn-sync" onclick="openSyncDialog()">
+                💾 Backup JSON
+            </button>
+        </div>
+
+        <div class="list-container" id="inventoryList"></div>
+    </div>
+
+    <!-- MAP MODAL -->
+    <div class="modal-overlay" id="mapModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🗺️ Mapa Interactivo de Inmuebles</h2>
+                <button class="close-modal" onclick="closeMapModal()">&times;</button>
+            </div>
+            <div id="mapContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark-mode');
+        
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        });
+
+        const btn = document.getElementById('extractBtn');
+        const urlInput = document.getElementById('urlInput');
+        const list = document.getElementById('inventoryList');
+        const status = document.getElementById('statusMsg');
+        
+        const filterText = document.getElementById('filterText');
+        const filterType = document.getElementById('filterType');
+        const filterCurrency = document.getElementById('filterCurrency');
+        const sortType = document.getElementById('sortType');
+
+        let properties = [];
+        let itineraryIds = new Set();
+        let dolarBlueRate = 1300; 
+
+        let mapInstance = null;
+        let markersGroup = null;
+
+        (async function fetchDolarRate() {
+            try {
+                const res = await fetch('https://dolarapi.com/v1/dolares/blue');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.venta) {
+                        dolarBlueRate = data.venta;
+                        renderList();
+                    }
+                }
+            } catch(e) {
+                console.warn("No se pudo obtener cotización Dólar Blue en vivo. Usando valor estimado.");
+            }
+        })();
+
+        [filterText, filterType, filterCurrency, sortType].forEach(el => {
+            el.addEventListener('input', renderList);
+            el.addEventListener('change', renderList);
+        });
+
+        function loadLocalDb() {
+            const raw = localStorage.getItem('web_properties_inventory');
+            if (raw) {
+                try {
+                    properties = JSON.parse(raw);
+                } catch(e) {
+                    properties = [];
+                }
+            }
+        }
+
+        function saveLocalDb() {
+            localStorage.setItem('web_properties_inventory', JSON.stringify(properties));
+        }
+
+        loadLocalDb();
+
+        btn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                showMsg("Se requiere una URL válida.", "error");
+                return;
+            }
+
+            showMsg("Obteniendo publicación vía Proxy CORS...", "info");
+            btn.disabled = true;
+
+            try {
+                const htmlText = await fetchPropertyHtml(url);
+                const extractedData = extractPropertyData(htmlText, url);
+                
+                properties.unshift(extractedData);
+                saveLocalDb();
+                renderList();
+                
+                urlInput.value = '';
+                status.style.display = "none";
+            } catch (err) {
+                showMsg(err.message, "error");
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        async function fetchPropertyHtml(targetUrl) {
+            const proxies = [
+                u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+                u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`
+            ];
+
+            for (let proxyFn of proxies) {
+                try {
+                    const res = await fetch(proxyFn(targetUrl));
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text && text.length > 500) return text;
+                    }
+                } catch(e) { console.warn("Proxy attempt failed:", e); }
+            }
+            throw new Error("No se pudo acceder a la URL por restricciones de CORS. Verificá el link o cargá los datos de forma manual.");
+        }
+
+        // --- CLIENT SIDE DEFENSIVE PARSER ---
+        function extractPropertyData(text, url) {
+            const id = 'id_' + Math.random().toString(36).substr(2, 9);
+            let tipo = "Inmueble";
+            let direccion = "Dirección no especificada";
+            let precio = "Consultar";
+            let expensas = "";
+            let ambientes = "";
+            let dormitorios = "";
+            let banos = "";
+            let cocheras = "";
+            let metros_tot = "";
+            let metros_cub = "";
+            let latitude = "";
+            let longitude = "";
+            let imagen = "";
+
+            const urlLower = url.toLowerCase();
+
+            // MercadoLibre Engine
+            if (urlLower.includes("mercadolibre.com") || urlLower.includes("mercadolivre.com")) {
+                const schemaMatch = text.match(/<script\s+type="application\/ld\+json"[^>]*>(.*?)<\/script>/is);
+                if (schemaMatch) {
+                    try {
+                        const sJson = JSON.parse(schemaMatch[1]);
+                        if (sJson.image) imagen = sJson.image;
+                        if (sJson.offers && sJson.offers.price) {
+                            precio = `${sJson.offers.priceCurrency || 'USD'} ${sJson.offers.price}`.trim();
+                        }
+                    } catch(e){}
+                }
+
+                const labelLocMatch = text.match(/"target"\s*:\s*"location_and_points"[^}]+?"text"\s*:\s*"([^"]+)"/i);
+                if (labelLocMatch) {
+                    direccion = labelLocMatch[1].trim();
+                } else {
+                    const addrM = text.match(/"item_address"\s*:\s*"([^"]+)"/i);
+                    const locM = text.match(/"item_location"\s*:\s*"([^"]+)"/i);
+                    if (addrM) {
+                        direccion = addrM[1].trim();
+                        if (locM && !direccion.toLowerCase().includes(locM[1].split(',')[0].toLowerCase())) {
+                            direccion += `, ${locM[1].split(',')[0].trim()}`;
+                        }
+                    }
+                }
+
+                const latM = text.match(/"latitude"\s*:\s*"?(-?\d+\.\d+)"?/i);
+                const lngM = text.match(/"longitude"\s*:\s*"?(-?\d+\.\d+)"?/i);
+                if (latM && lngM) {
+                    latitude = latM[1];
+                    longitude = lngM[1];
+                }
+            }
+
+            // Fallback Regex Parser for details
+            const cleanText = text.replace(/<(script|style)[^>]*>.*?<\/\1>/gis, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+            const tipoM = cleanText.match(/\b(departamento|casa|ph|lote|terreno)\b/i);
+            if (tipoM) tipo = tipoM[1].charAt(0).toUpperCase() + tipoM[1].slice(1);
+
+            const totM = cleanText.match(/(\d+)\s*m²\s*totales/i);
+            if (totM) metros_tot = totM[1];
+
+            const ambM = cleanText.match(/(\d+)\s*ambientes/i);
+            if (ambM) ambientes = ambM[1];
+
+            const dormM = cleanText.match(/(\d+)\s*dormitorios?/i) || cleanText.match(/(\d+)\s*dorm/i);
+            if (dormM) dormitorios = dormM[1];
+
+            const banosM = cleanText.match(/(\d+)\s*baños?/i);
+            if (banosM) banos = banosM[1];
+
+            const expM = cleanText.match(/expensas.{0,15}?([U\$S|USD|ARS|\$]{1,3}\s*[\d\.\,]+)/i);
+            if (expM) expensas = expM[1].trim();
+
+            if (!imagen) {
+                const imgM = text.match(/property="og:image"\s+content="([^"]+)"/i);
+                if (imgM) imagen = imgM[1];
+            }
+
+            return {
+                id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras,
+                metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0,
+                latitude, longitude, imagen, url
+            };
+        }
+
+        window.deleteProperty = function(id) {
+            if(!confirm("¿Seguro que deseas eliminar esta propiedad?")) return;
+            properties = properties.filter(p => p.id !== id);
+            itineraryIds.delete(id);
+            updateItineraryCount();
+            saveLocalDb();
+            renderList();
+        };
+
+        window.editProperty = function(id) {
+            const prop = properties.find(p => p.id === id);
+            if(!prop) return;
+
+            const newDireccion = prompt("Actualizar Dirección:", prop.direccion || "");
+            if (newDireccion === null) return;
+
+            const newPrecio = prompt("Actualizar Precio:", prop.precio || "");
+            if (newPrecio === null) return; 
+            
+            const newExpensas = prompt("Actualizar Expensas:", prop.expensas || "");
+            if (newExpensas === null) return;
+
+            if (newDireccion.trim() !== (prop.direccion || "").trim()) {
+                prop.latitude = "";
+                prop.longitude = "";
+            }
+
+            prop.direccion = newDireccion;
+            prop.precio = newPrecio;
+            prop.expensas = newExpensas;
+            saveLocalDb();
+            renderList();
+        };
+
+        window.setRanking = function(id, rating) {
+            const prop = properties.find(p => p.id === id);
+            if (!prop) return;
+            prop.ranking = prop.ranking === rating ? 0 : rating;
+            saveLocalDb();
+            renderList();
+        };
+
+        window.updateSchoolData = function(id) {
+            const prop = properties.find(p => p.id === id);
+            const dist = prompt("Ingresa distancia al colegio (ej: 2.5 km):", prop.distancia_cole || "");
+            if (dist === null) return; 
+            const time = prompt("Ingresa tiempo estimado (ej: 15 min):", prop.tiempo_cole || "");
+            if (time === null) return;
+
+            prop.distancia_cole = dist;
+            prop.tiempo_cole = time;
+            saveLocalDb();
+            renderList();
+        };
+
+        window.toggleItinerary = function(id) {
+            if (itineraryIds.has(id)) itineraryIds.delete(id);
+            else itineraryIds.add(id);
+            updateItineraryCount();
+        };
+
+        function selectAllItinerary() {
+            const currentList = getFilteredProperties();
+            if (currentList.length === 0) return;
+            
+            const allSelected = currentList.every(p => itineraryIds.has(p.id));
+            currentList.forEach(p => {
+                if (allSelected) itineraryIds.delete(p.id);
+                else itineraryIds.add(p.id);
+            });
+            updateItineraryCount();
+            renderList();
+        }
+
+        function updateItineraryCount() {
+            document.getElementById('itineraryCount').innerText = itineraryIds.size;
+        }
+
+        function openAddressInGoogleMaps(address) {
+            let a = address;
+            if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}`, '_blank');
+        }
+
+        function isCabaAddress(direccionStr) {
+            if (!direccionStr) return false;
+            const str = direccionStr.toLowerCase();
+            return str.includes("caba") || str.includes("capital federal") || str.includes("ciudad autónoma de buenos aires") || str.includes("capital");
+        }
+
+        function sanitizeAddressForGeocoding(addr, level = 0) {
+            if (!addr || addr === "Dirección no especificada") return "";
+            let clean = addr;
+
+            if (level === 0) {
+                clean = clean.replace(/\s+al\s+(\d+)/gi, ' $1');
+                clean = clean.replace(/\b(gral|av|dr)\b\.?/gi, (m) => {
+                    const l = m.toLowerCase();
+                    if (l.startsWith('gral')) return 'General';
+                    if (l.startsWith('av')) return 'Avenida';
+                    if (l.startsWith('dr')) return 'Doctor';
+                    return m;
+                });
+                clean = clean.replace(/\d+°\s*[a-zA-Z]?/gi, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
+            } else if (level === 1) {
+                clean = clean.replace(/\s+al\s+\d+/gi, '').replace(/\s+\d+/g, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
+            } else if (level === 2) {
+                const parts = clean.split(',');
+                clean = parts.length > 1 ? parts[parts.length - 1].trim() : clean;
+            }
+
+            if (!clean.toLowerCase().includes("buenos aires") && !clean.toLowerCase().includes("capital")) {
+                clean += ", Buenos Aires, Argentina";
+            }
+            return clean;
+        }
+
+        async function geocodeQuery(queryStr) {
+            if (!queryStr) return null;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                }
+            } catch(e) { console.warn("Geocode error:", e); }
+            return null;
+        }
+
+        async function geocodeAddressWithFallbacks(p) {
+            if (p.latitude && p.longitude) {
+                const lat = parseFloat(p.latitude);
+                const lon = parseFloat(p.longitude);
+                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) return { lat, lon, approx: false };
+            }
+
+            let coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 0));
+            if (coords) return { ...coords, approx: false };
+
+            await new Promise(r => setTimeout(r, 400));
+            coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 1));
+            if (coords) return { ...coords, approx: true };
+
+            await new Promise(r => setTimeout(r, 400));
+            coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 2));
+            if (coords) {
+                return { lat: coords.lat + (Math.random() - 0.5) * 0.008, lon: coords.lon + (Math.random() - 0.5) * 0.008, approx: true };
+            }
+
+            return { lat: -34.5085 + (Math.random() - 0.5) * 0.015, lon: -58.4988 + (Math.random() - 0.5) * 0.015, approx: true };
+        }
+
+        function addPropertyMarker(p, lat, lon, isApprox = false) {
+            const approxTag = isApprox ? '<div style="font-size:10px;color:#d97706;font-weight:bold;">⚠️ Ubicación aprox.</div>' : '';
+            const popupContent = `
+                <div style="color:#111; font-family:sans-serif; max-width:200px;">
+                    ${p.imagen ? `<img src="${p.imagen}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:6px;">` : ''}
+                    <strong style="font-size:13px;display:block;">${p.tipo} - ${p.precio}</strong>
+                    <div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.direccion}</div>
+                    ${approxTag}
+                    <a href="${generateMapsLink(p)}" target="_blank" style="display:inline-block;margin-top:6px;background:#2563eb;color:white;padding:5px 10px;border-radius:4px;text-decoration:none;font-size:11px;font-weight:bold;">Abrir en Google Maps →</a>
+                </div>
+            `;
+            L.marker([lat, lon]).addTo(markersGroup).bindPopup(popupContent);
+        }
+
+        async function openMapModal() {
+            const modal = document.getElementById('mapModal');
+            modal.classList.add('active');
+
+            if (!mapInstance) {
+                mapInstance = L.map('mapContainer').setView([-34.5102, -58.4924], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(mapInstance);
+                markersGroup = L.featureGroup().addTo(mapInstance);
+            }
+
+            setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 250);
+            markersGroup.clearLayers();
+
+            const schoolLat = -34.5085, schoolLon = -58.4988;
+            const schoolIcon = L.divIcon({
+                className: 'custom-school-pin',
+                html: '<div style="background:#8b5cf6;color:white;padding:4px 8px;border-radius:12px;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);white-space:nowrap;">🏫 Col. San Carlos</div>',
+                iconSize: [120, 30],
+                iconAnchor: [60, 15]
+            });
+            L.marker([schoolLat, schoolLon], { icon: schoolIcon }).addTo(markersGroup).bindPopup('<b>Colegio San Carlos Diálogos</b><br>Gral. José María Paz 2431, Olivos');
+
+            const targetProps = (itineraryIds.size > 0) ? properties.filter(p => itineraryIds.has(p.id)) : properties;
+
+            for (const p of targetProps) {
+                if (p.latitude && p.longitude) addPropertyMarker(p, parseFloat(p.latitude), parseFloat(p.longitude), false);
+            }
+
+            if (markersGroup.getLayers().length > 1) mapInstance.fitBounds(markersGroup.getBounds().pad(0.1));
+
+            for (const p of targetProps) {
+                if (!p.latitude || !p.longitude) {
+                    const res = await geocodeAddressWithFallbacks(p);
+                    if (res) {
+                        if (!res.approx) {
+                            p.latitude = String(res.lat);
+                            p.longitude = String(res.lon);
+                            saveLocalDb();
+                        }
+                        addPropertyMarker(p, res.lat, res.lon, res.approx);
+                        if (markersGroup.getLayers().length > 1) mapInstance.fitBounds(markersGroup.getBounds().pad(0.1));
+                    }
+                }
+            }
+        }
+
+        function closeMapModal() {
+            document.getElementById('mapModal').classList.remove('active');
+        }
+
+        function generateItineraryMapsLink() {
+            if (itineraryIds.size === 0) {
+                alert("Seleccioná al menos una propiedad con el tilde '🚗 Itinerario' para armar la ruta.");
+                return;
+            }
+            const selectedProps = properties.filter(p => itineraryIds.has(p.id));
+            if (selectedProps.length === 0) return;
+
+            const schoolAddr = "Colegio San Carlos Dialogos, Gral. José María Paz 2431, Olivos, Buenos Aires";
+            const addrs = selectedProps.map(p => {
+                let a = p.direccion || "";
+                if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
+                return a;
+            });
+
+            let origin = schoolAddr;
+            let destination = (selectedProps.length === 1) ? addrs[0] : addrs[addrs.length - 1];
+            let waypoints = (selectedProps.length === 1) ? [] : addrs.slice(0, -1);
+
+            let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+            if (waypoints.length > 0) url += `&waypoints=${waypoints.map(encodeURIComponent).join('|')}`;
+
+            window.open(url, '_blank');
+        }
+
+        function openSyncDialog() {
+            const act = prompt("Escribí 'EXPORTAR' para descargar backup en JSON, o pegá tu código JSON para 'IMPORTAR':");
+            if (!act) return;
+
+            if (act.trim().toUpperCase() === 'EXPORTAR') {
+                const blob = new Blob([JSON.stringify(properties, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `propiedades_backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+            } else {
+                try {
+                    const parsed = JSON.parse(act);
+                    if (Array.isArray(parsed)) {
+                        properties = parsed;
+                        saveLocalDb();
+                        renderList();
+                        alert("¡Base de datos importada exitosamente!");
+                    } else { alert("Formato JSON inválido."); }
+                } catch(e) { alert("Error al parsear el JSON ingresado."); }
+            }
+        }
+
+        function showMsg(msg, type) {
+            status.className = `alert ${type}`;
+            status.style.display = "block";
+            status.innerText = msg;
+        }
+
+        function generateWaLink(p) {
+            const text = `Mirá este ${p.tipo} en ${p.direccion}.\\nValor: ${p.precio}\\nLink: ${p.url}`;
+            return `https://wa.me/?text=${encodeURIComponent(text)}`;
+        }
+
+        function generateMapsLink(p) {
+            let origin = p.direccion || "";
+            if(!origin.toLowerCase().includes("buenos aires") && !origin.toLowerCase().includes("capital")) origin += ", Buenos Aires, Argentina";
+            const dest = "Colegio San Carlos Dialogos, Gral. José María Paz 2431, B1636BFI Olivos, Provincia de Buenos Aires";
+            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}`;
+        }
+
+        function parseNumericVal(str) {
+            if (!str) return 0;
+            return parseInt(String(str).replace(/[^0-9]/g, ''), 10) || 0;
+        }
+
+        function parseFloatVal(str) {
+            if (!str) return 999999;
+            let clean = str.toLowerCase().replace(',', '.');
+            let num = parseFloat(clean.replace(/[^0-9.]/g, ''));
+            if (isNaN(num)) return 999999;
+            if (clean.includes('m') && !clean.includes('km')) num = num / 1000;
+            return num;
+        }
+
+        function getCurrency(str) {
+            if (!str) return "$";
+            const upper = str.toUpperCase();
+            if (upper.includes("USD") || upper.includes("U$S") || upper.includes("US$")) return "USD";
+            return "$";
+        }
+
+        function formatMoney(num, currency) {
+            return `${currency === 'USD' ? 'US$' : '$'} ${num.toLocaleString('es-AR')}`;
+        }
+
+        function getTotalUsdHtml(precioStr, expensasStr) {
+            if (!precioStr || dolarBlueRate <= 0) return "";
+            const precio = parseNumericVal(precioStr);
+            const expensas = parseNumericVal(expensasStr) || 0;
+            const precioCurr = getCurrency(precioStr);
+            const expensasCurr = getCurrency(expensasStr);
+
+            if (precio <= 0) return "";
+
+            let totalUsd = (precioCurr === 'USD') ? precio : (precio / dolarBlueRate);
+            if (expensas > 0) {
+                totalUsd += (expensasCurr === 'USD') ? expensas : (expensas / dolarBlueRate);
+            }
+
+            totalUsd = Math.round(totalUsd);
+            if (precioCurr === 'USD' && expensas === 0) return "";
+
+            return `<span class="badge-usd-sub" title="Cotización Blue ($${dolarBlueRate})">(~US$ ${totalUsd.toLocaleString('es-AR')})</span>`;
+        }
+
+        function generateCostsHtml(precioStr, direccionStr) {
+            const alquiler = parseNumericVal(precioStr);
+            if (alquiler === 0) return '';
+            
+            const currency = getCurrency(precioStr);
+            const deposito = alquiler;
+            const isCaba = isCabaAddress(direccionStr);
+            const comision = isCaba ? 0 : (alquiler * 24 * 0.05);
+            const totalGral = deposito + comision;
+            
+            return `
+                <div class="entry-costs">
+                    <h4>Condiciones de Entrada ${isCaba ? '<small style="font-weight:600;font-size:0.7rem;color:var(--whatsapp);margin-left:4px;">(CABA - Sin comisión)</small>' : ''}</h4>
+                    <div class="entry-costs-grid">
+                        <div class="cost-item"><span>Depósito (1m):</span> <strong>${formatMoney(deposito, currency)}</strong></div>
+                        ${!isCaba ? `<div class="cost-item"><span>Comisión (5%):</span> <strong>${formatMoney(comision, currency)}</strong></div>` : ''}
+                        <div class="cost-item cost-item-total">
+                            <span>Total (Dep${!isCaba ? ' + Com' : ''}):</span> <strong>${formatMoney(totalGral, currency)}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getFilteredProperties() {
+            const searchTerm = filterText.value.toLowerCase();
+            const typeTerm = filterType.value;
+            const currencyTerm = filterCurrency.value;
+
+            return properties.filter(p => {
+                const matchText = (p.direccion || "").toLowerCase().includes(searchTerm) || (p.tipo || "").toLowerCase().includes(searchTerm);
+                const matchType = typeTerm === "ALL" || (p.tipo || "").includes(typeTerm);
+                let matchCurrency = true;
+                const priceStr = (p.precio || "").toUpperCase();
+                if (currencyTerm === "ARS") matchCurrency = !priceStr.includes("USD") && !priceStr.includes("U$S");
+                else if (currencyTerm === "USD") matchCurrency = priceStr.includes("USD") || priceStr.includes("U$S");
+                return matchText && matchType && matchCurrency;
+            });
+        }
+
+        function renderList() {
+            const sortTerm = sortType.value;
+            let processedProps = getFilteredProperties();
+
+            if (sortTerm !== 'date_desc') {
+                processedProps.sort((a, b) => {
+                    if (sortTerm === 'ranking_desc') return (b.ranking || 0) - (a.ranking || 0);
+                    if (sortTerm === 'dist_asc') return parseFloatVal(a.distancia_cole) - parseFloatVal(b.distancia_cole);
+                    if (sortTerm === 'price_asc') return parseNumericVal(a.precio) - parseNumericVal(b.precio);
+                    if (sortTerm === 'price_desc') return parseNumericVal(b.precio) - parseNumericVal(a.precio);
+                    if (sortTerm === 'rooms_desc') return parseNumericVal(b.ambientes) - parseNumericVal(a.ambientes);
+                    if (sortTerm === 'sqm_desc') return parseNumericVal(b.metros_tot) - parseNumericVal(a.metros_tot);
+                    return 0;
+                });
+            }
+
+            if (processedProps.length === 0) {
+                list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">No hay resultados para esta búsqueda.</div>';
+                return;
+            }
+            
+            list.innerHTML = processedProps.map(p => {
+                const makeBadge = (label, value) => {
+                    if (!value || value === "N/A" || value === "") return "";
+                    return `<div class="badge">${label} <strong>${value}</strong></div>`;
+                };
+
+                const schoolData = (p.distancia_cole || p.tiempo_cole) 
+                    ? `${p.distancia_cole} | ${p.tiempo_cole}` 
+                    : `<span style="color:var(--accent);">+ Cole. S.C.</span>`;
+
+                const hasExpensas = p.expensas && p.expensas !== "N/A" && p.expensas !== "0" && p.expensas !== "$0";
+                const expText = hasExpensas ? `+ ${p.expensas} exp.` : "";
+
+                const starsHtml = [1,2,3,4,5].map(star => `
+                    <span class="star ${star <= (p.ranking || 0) ? 'active' : ''}" onclick="setRanking('${p.id}', ${star})">★</span>
+                `).join('');
+
+                const escapedAddress = (p.direccion || "").replace(/'/g, "\\'");
+
+                return `
+                <div class="card">
+                    ${p.imagen ? `<img src="${p.imagen}" class="card-img" alt="Preview">` : `<div class="card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;font-weight:600;">SIN IMAGEN</div>`}
+                    
+                    <div class="card-content">
+                        <div class="card-header">
+                            <div>
+                                <div class="prop-title">${p.tipo}</div>
+                                <div class="prop-address" title="Click para buscar en Google Maps" onclick="openAddressInGoogleMaps('${escapedAddress}')">
+                                    📍 ${p.direccion}
+                                </div>
+                            </div>
+                            <div class="star-rating" title="Asignar Ranking">${starsHtml}</div>
+                        </div>
+                        
+                        <div class="metrics-grid">
+                            <div class="badge highlight">
+                                <span>Valor</span> 
+                                <div style="text-align: right;">
+                                    <strong>${p.precio}</strong>
+                                    ${hasExpensas ? `<span style="font-size:0.85rem; font-weight:600; color:var(--badge-hl-text); margin-left:4px;">${expText}</span>` : ''}
+                                    ${getTotalUsdHtml(p.precio, p.expensas)}
+                                </div>
+                            </div>
+                            <div class="badge badge-interactive" onclick="updateSchoolData('${p.id}')" title="Editar parámetros del colegio">
+                                <span>Distancia a colegio</span> <strong>${schoolData}</strong>
+                            </div>
+                            ${makeBadge("Totales", p.metros_tot ? p.metros_tot + ' m²' : null)}
+                            ${makeBadge("Ambientes", p.ambientes)}
+                            ${makeBadge("Dormitorios", p.dormitorios)}
+                            ${makeBadge("Baños", p.banos)}
+                            ${makeBadge("Cocheras", p.cocheras)}
+                        </div>
+
+                        ${generateCostsHtml(p.precio, p.direccion)}
+
+                        <label class="itinerary-toggle">
+                            <input type="checkbox" ${itineraryIds.has(p.id) ? 'checked' : ''} onchange="toggleItinerary('${p.id}')">
+                            🚗 Incluir en Itinerario de Visita
+                        </label>
+                        
+                        <div class="card-actions">
+                            <a href="${generateWaLink(p)}" target="_blank" class="wa-btn">WhatsApp</a>
+                            <a href="${generateMapsLink(p)}" target="_blank" class="school-btn">Ruta Cole</a>
+                            <a href="${p.url}" target="_blank" class="link-btn">Link</a>
+                            <button onclick="editProperty('${p.id}')" class="action-btn edit-btn">Editar</button>
+                            <button onclick="deleteProperty('${p.id}')" class="action-btn delete-btn" style="grid-column: span 2;">Borrar Ficha</button>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+    </script>
+</body>
+</html>
