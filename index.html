@@ -622,7 +622,15 @@
 
                 const latM = text.match(/"latitude"\s*:\s*"?(-?\d+\.\d+)"?/i);
                 const lngM = text.match(/"longitude"\s*:\s*"?(-?\d+\.\d+)"?/i);
-                if (latM && lngM) { latitude = latM[1]; longitude = lngM[1]; }
+                if (latM && lngM) {
+                    // El primer match de "latitude"/"longitude" en el HTML de
+                    // MercadoLibre puede pertenecer a un widget de mapa, un
+                    // aviso relacionado, etc., no necesariamente a la
+                    // propiedad. Si cae fuera del rango de Buenos Aires, lo
+                    // descartamos y dejamos que se geocodee por dirección.
+                    const latVal = parseFloat(latM[1]), lngVal = parseFloat(lngM[1]);
+                    if (isWithinBsAs(latVal, lngVal)) { latitude = latM[1]; longitude = lngM[1]; }
+                }
             }
 
             const cleanText = text.replace(/<(script|style)[^>]*>.*?<\/\1>/gis, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
@@ -787,21 +795,31 @@
             return null;
         }
 
+        // Bounding box laxo para Gran Buenos Aires / CABA. Cualquier coordenada
+        // fuera de este rango se descarta por no ser confiable (evita pines
+        // "en cualquier lado" cuando el dato de origen está corrompido).
+        const BSAS_BOUNDS = { minLat: -35.3, maxLat: -34.1, minLon: -59.2, maxLon: -57.8 };
+        function isWithinBsAs(lat, lon) {
+            return lat >= BSAS_BOUNDS.minLat && lat <= BSAS_BOUNDS.maxLat &&
+                   lon >= BSAS_BOUNDS.minLon && lon <= BSAS_BOUNDS.maxLon;
+        }
+
         async function geocodeAddressWithFallbacks(p) {
             if (p.latitude && p.longitude) return { lat: parseFloat(p.latitude), lon: parseFloat(p.longitude), approx: false };
             let coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 0));
-            if (coords) return { ...coords, approx: false };
-            await new Promise(r => setTimeout(r, 400));
+            if (coords && isWithinBsAs(coords.lat, coords.lon)) return { ...coords, approx: false };
+            await new Promise(r => setTimeout(r, 1000));
             coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 1));
-            if (coords) return { ...coords, approx: true };
-            await new Promise(r => setTimeout(r, 400));
+            if (coords && isWithinBsAs(coords.lat, coords.lon)) return { ...coords, approx: true };
+            await new Promise(r => setTimeout(r, 1000));
             coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 2));
-            if (coords) return { lat: coords.lat + (Math.random() - 0.5) * 0.008, lon: coords.lon + (Math.random() - 0.5) * 0.008, approx: true };
-            
-            const isCaba = isCabaAddress(p.direccion);
-            const baseLat = isCaba ? -34.5800 : -34.5085;
-            const baseLon = isCaba ? -58.4700 : -58.4988;
-            return { lat: baseLat + (Math.random() - 0.5) * 0.015, lon: baseLon + (Math.random() - 0.5) * 0.015, approx: true };
+            if (coords && isWithinBsAs(coords.lat, coords.lon)) return { ...coords, approx: true };
+
+            // No inventamos coordenadas al azar: si no se pudo ubicar la
+            // dirección de forma confiable, no devolvemos ningún punto.
+            // Antes acá se generaba un punto aleatorio cerca de CABA/GBA,
+            // que es la causa de que los pines aparezcan "en cualquier lado".
+            return null;
         }
 
         function generateGpsLink(p) {
@@ -850,9 +868,19 @@
             L.marker([-34.5085, -58.4988], { icon: schoolIcon }).addTo(markersGroup).bindPopup('<b>Colegio San Carlos</b>');
 
             const targetProps = (itineraryIds.size > 0) ? globalState.properties.filter(p => itineraryIds.has(p.id)) : globalState.properties;
+            const notLocated = [];
 
             for (const p of targetProps) {
-                if (p.latitude && p.longitude) addPropertyMarker(p, parseFloat(p.latitude), parseFloat(p.longitude), false);
+                const lat = parseFloat(p.latitude), lon = parseFloat(p.longitude);
+                if (p.latitude && p.longitude && isWithinBsAs(lat, lon)) {
+                    addPropertyMarker(p, lat, lon, false);
+                } else if (p.latitude && p.longitude) {
+                    // Coordenada guardada pero fuera de rango: era un dato
+                    // corrupto (ej. de una extracción vieja). La descartamos
+                    // para no mostrar un pin en un lugar imposible, y se
+                    // vuelve a geocodear desde la dirección más abajo.
+                    p.latitude = ""; p.longitude = "";
+                }
             }
             if (markersGroup.getLayers().length > 1) mapInstance.fitBounds(markersGroup.getBounds().pad(0.1));
 
@@ -866,8 +894,18 @@
                         }
                         addPropertyMarker(p, res.lat, res.lon, res.approx);
                         if (markersGroup.getLayers().length > 1) mapInstance.fitBounds(markersGroup.getBounds().pad(0.1));
+                    } else {
+                        notLocated.push(p.direccion || 'Sin dirección');
                     }
+                    // Pausa entre direcciones distintas para no pegarle
+                    // demasiado rápido a Nominatim (si no, empieza a devolver
+                    // errores y eso disparaba el fallback aleatorio de antes).
+                    await new Promise(r => setTimeout(r, 300));
                 }
+            }
+
+            if (notLocated.length > 0) {
+                toast(`⚠️ No se pudo ubicar en el mapa: ${notLocated.length} propiedad(es). Revisá la dirección cargada.`, 'warning', 5000);
             }
         }
 
