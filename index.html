@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate Extractor // Web Edition</title>
+    <title>Real Estate Extractor // GitHub Sync Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -50,10 +50,22 @@
         .container { max-width: 1400px; margin: 0 auto; }
         
         header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 14px; }
-        h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+        h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
         
         .header-actions { display: flex; gap: 10px; align-items: center; }
-        .status-badge { background: var(--badge-hl-bg); color: var(--badge-hl-text); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--badge-hl-border); }
+        .status-badge { background: var(--badge-hl-bg); color: var(--badge-hl-text); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--badge-hl-border); transition: all 0.3s; }
+        
+        /* Sync Dot Animation */
+        .cloud-sync-wrap { position: relative; display: flex; align-items: center; gap: 4px; }
+        .btn-cloud-sync { background: var(--panel); border: 1px solid var(--border); color: var(--text-main); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .btn-cloud-sync.spinning { animation: spin 0.8s linear infinite; color: var(--whatsapp); }
+        .sync-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg); background: var(--text-muted); transition: background 0.2s; }
+        .sync-dot.dot-synced { background: var(--whatsapp); }
+        .sync-dot.dot-pending { background: var(--warning); }
+        .sync-dot.dot-error { background: var(--danger); }
+        .sync-dot.dot-nocreds { background: var(--text-muted); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         #themeToggle { background: transparent; border: 1px solid var(--border); border-radius: 8px; font-size: 1.1rem; padding: 4px 8px; cursor: pointer; color: var(--text-main); margin: 0; width: auto; }
         #themeToggle:hover { background: var(--badge-bg); }
 
@@ -68,9 +80,12 @@
         .input-group button:hover { background: var(--accent-hover); }
         .input-group button:disabled { background: #9ca3af; cursor: not-allowed; }
         
-        .alert { padding: 10px 14px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; display: none; font-weight: 500; }
-        .alert.error { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
-        .alert.info { background: var(--badge-bg); color: var(--text-main); border: 1px solid var(--border); }
+        /* Toasts */
+        .toast-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; max-width: 460px; padding: 0 15px; pointer-events: none; }
+        .toast { background: var(--panel); border: 1px solid var(--border); color: var(--text-main); font-size: 0.85rem; font-weight: 600; padding: 10px 16px; border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-8px); transition: opacity 0.2s, transform 0.2s; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.toast-success { border-color: var(--whatsapp); color: var(--whatsapp); }
+        .toast.toast-error { border-color: var(--danger); color: var(--danger); }
         
         .filters-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
         .filters-grid input { flex: 1 1 200px; }
@@ -145,11 +160,11 @@
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--panel); border-radius: 12px; width: 100%; max-width: 1100px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
+        .modal-content { background: var(--panel); border-radius: 12px; width: 100%; max-width: 1100px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
         .modal-header { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
         .modal-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
         .close-modal { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main); line-height: 1; padding: 0 4px; }
-        #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); }
+        #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); min-height: 400px; }
 
         @media (max-width: 900px) {
             .filters-grid { flex-direction: column; }
@@ -158,11 +173,18 @@
     </style>
 </head>
 <body class="dark-mode">
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="container">
         <header>
-            <h1>Real Estate Extractor</h1>
+            <h1>
+                Real Estate Extractor
+                <div class="cloud-sync-wrap">
+                    <button class="btn-cloud-sync" id="btnCloudSync" onclick="manualSync()" title="Sincronizar con GitHub">🔄</button>
+                    <span class="sync-dot" id="syncDot"></span>
+                </div>
+            </h1>
             <div class="header-actions">
-                <span class="status-badge">Web Edition</span>
                 <button id="themeToggle" title="Toggle Theme">🌓</button>
             </div>
         </header>
@@ -208,8 +230,8 @@
             <button class="btn-itinerary" onclick="generateItineraryMapsLink()">
                 🚗 Ruta GPS (<span id="itineraryCount">0</span>)
             </button>
-            <button class="btn-sync" onclick="openSyncDialog()">
-                💾 Backup JSON
+            <button class="btn-sync" onclick="forceSetupCredentials()">
+                ⚙️ Configurar Nube (GitHub)
             </button>
         </div>
 
@@ -228,17 +250,30 @@
     </div>
 
     <script>
-        // PEGA AQUÍ EL CONTENIDO DE TU zp_inventory.json SI QUIERES TENERLO SIEMPRE POR DEFECTO:
-        const bakedProperties = [];
+        // --- TOAST SYSTEM ---
+        function toast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            if(!container) return;
+            const el = document.createElement('div');
+            el.className = `toast toast-${type}`;
+            el.textContent = message;
+            container.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => el.remove(), 250);
+            }, duration);
+        }
 
+        // --- THEME ---
         const themeToggle = document.getElementById('themeToggle');
         if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark-mode');
-        
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
+        // --- STATE & VARS ---
         const btn = document.getElementById('extractBtn');
         const urlInput = document.getElementById('urlInput');
         const list = document.getElementById('inventoryList');
@@ -249,14 +284,30 @@
         const filterCurrency = document.getElementById('filterCurrency');
         const sortType = document.getElementById('sortType');
 
-        let properties = [];
+        let globalState = { updatedAt: 0, properties: [] };
         let itineraryIds = new Set();
         let dolarBlueRate = 1300; 
 
         let mapInstance = null;
         let markersGroup = null;
 
-        (async function fetchDolarRate() {
+        // --- GITHUB SYNC VARIABLES ---
+        let pushDebounceTimer = null;
+        let hasUnsyncedChanges = false;
+        let lastKnownCloudUpdatedAt = 0;
+        let lastSyncHadError = false;
+        let isSyncingLock = false;
+        let isFreshInstall = !localStorage.getItem('re_global_state');
+
+        // --- INIT ---
+        (async function initApp() {
+            loadLocalDb();
+            renderList();
+            fetchDolarRate();
+            setTimeout(() => { autoPullFromCloud(); }, 100);
+        })();
+
+        async function fetchDolarRate() {
             try {
                 const res = await fetch('https://dolarapi.com/v1/dolares/blue');
                 if (res.ok) {
@@ -266,41 +317,223 @@
                         renderList();
                     }
                 }
-            } catch(e) {
-                console.warn("No se pudo obtener cotización Dólar Blue en vivo. Usando valor estimado.");
-            }
-        })();
+            } catch(e) {}
+        }
 
         [filterText, filterType, filterCurrency, sortType].forEach(el => {
             el.addEventListener('input', renderList);
             el.addEventListener('change', renderList);
         });
 
+        // --- LOCAL STORAGE ---
         function loadLocalDb() {
-            const raw = localStorage.getItem('web_properties_inventory');
+            const raw = localStorage.getItem('re_global_state');
             if (raw) {
-                try {
-                    properties = JSON.parse(raw);
-                } catch(e) {
-                    properties = bakedProperties;
-                }
-            } else {
-                properties = bakedProperties;
+                try { 
+                    globalState = JSON.parse(raw); 
+                    if (!globalState.properties) globalState.properties = [];
+                } catch(e) { globalState = { updatedAt: 0, properties: [] }; }
             }
         }
 
         function saveLocalDb() {
-            localStorage.setItem('web_properties_inventory', JSON.stringify(properties));
+            globalState.updatedAt = Date.now();
+            localStorage.setItem('re_global_state', JSON.stringify(globalState));
+            hasUnsyncedChanges = true;
+            updateSyncStatus();
+            scheduleCloudPush();
         }
 
-        loadLocalDb();
+        // --- GITHUB GIST SYNC LOGIC ---
+        function getSyncCredentials() {
+            let token = localStorage.getItem('re_gh_token');
+            let gistId = localStorage.getItem('re_gh_gist');
+            return { token, gistId };
+        }
 
-        btn.addEventListener('click', async () => {
-            const url = urlInput.value.trim();
-            if (!url) {
-                showMsg("Se requiere una URL válida.", "error");
+        async function forceSetupCredentials() {
+            const current = getSyncCredentials();
+            const token = prompt("Pegá tu GitHub Personal Access Token (permiso 'gist'):", current.token || '');
+            if (token === null) return;
+            const gistId = prompt("Pegá el ID del Gist a usar para sincronizar:", current.gistId || '');
+            if (gistId === null) return;
+            if (!token.trim() || !gistId.trim()) {
+                toast("Token y Gist ID son obligatorios.", "error");
                 return;
             }
+            localStorage.setItem('re_gh_token', token.trim());
+            localStorage.setItem('re_gh_gist', gistId.trim());
+            toast('🔐 Credenciales guardadas.', 'info');
+            await manualSync();
+        }
+
+        function scheduleCloudPush() {
+            clearTimeout(pushDebounceTimer);
+            pushDebounceTimer = setTimeout(async () => {
+                const result = await autoPushToCloud();
+                if(result.ok) {
+                    hasUnsyncedChanges = false;
+                    lastSyncHadError = false;
+                } else if(result.conflict) {
+                    toast('⚠️ Hay cambios más nuevos en la nube. Tocá 🔄 para traerlos.', 'error', 5000);
+                } else if(!result.noCreds && !result.offline) {
+                    lastSyncHadError = true;
+                }
+                updateSyncStatus();
+            }, 1500);
+        }
+
+        function updateSyncStatus() {
+            const dot = document.getElementById('syncDot');
+            if(!dot) return;
+            const creds = getSyncCredentials();
+            dot.classList.remove('dot-synced', 'dot-pending', 'dot-error', 'dot-nocreds');
+            if(!creds.token || !creds.gistId) {
+                dot.classList.add('dot-nocreds');
+                dot.title = 'Sin credenciales';
+            } else if(!navigator.onLine) {
+                dot.classList.add('dot-pending');
+                dot.title = 'Offline';
+            } else if(lastSyncHadError) {
+                dot.classList.add('dot-error');
+                dot.title = 'Error en sincronización';
+            } else if(hasUnsyncedChanges) {
+                dot.classList.add('dot-pending');
+                dot.title = 'Cambios pendientes';
+            } else {
+                dot.classList.add('dot-synced');
+                dot.title = 'Sincronizado';
+            }
+        }
+
+        async function autoPullFromCloud(isForcedManual = false) {
+            if (!navigator.onLine && !isForcedManual) return { ok: false, offline: true };
+            if(isSyncingLock && !isForcedManual) return { ok: false };
+            
+            const creds = getSyncCredentials();
+            if(!creds.token || !creds.gistId) return { ok: false, noCreds: true };
+            
+            isSyncingLock = true;
+            const syncBtn = document.getElementById('btnCloudSync');
+            if(syncBtn) syncBtn.classList.add('spinning');
+            
+            try {
+                const res = await fetch(`https://api.github.com/gists/${creds.gistId}?_cb=${Date.now()}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `token ${creds.token}` }
+                });
+                if(!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+
+                const gistData = await res.json();
+                if(!gistData.files || !gistData.files["re_inventory.json"]) return { ok: true, adopted: false };
+
+                const cloudContent = JSON.parse(gistData.files["re_inventory.json"].content);
+                const cloudUpdatedAt = cloudContent.updatedAt || 0;
+                lastKnownCloudUpdatedAt = Math.max(lastKnownCloudUpdatedAt, cloudUpdatedAt);
+
+                if(cloudUpdatedAt > globalState.updatedAt || (isFreshInstall && cloudContent.properties && cloudContent.properties.length > 0)) {
+                    globalState = cloudContent;
+                    localStorage.setItem('re_global_state', JSON.stringify(globalState));
+                    isFreshInstall = false;
+                    hasUnsyncedChanges = false;
+                    renderList();
+                    return { ok: true, adopted: true };
+                }
+                return { ok: true, adopted: false };
+            } catch(e) {
+                return { ok: false, error: e.message, offline: !navigator.onLine };
+            } finally {
+                isSyncingLock = false;
+                if(syncBtn) syncBtn.classList.remove('spinning');
+                updateSyncStatus();
+            }
+        }
+
+        async function autoPushToCloud(bypassLock = false, skipConflictCheck = false) {
+            if (!navigator.onLine && !bypassLock) return { ok: false, offline: true };
+            if(isSyncingLock && !bypassLock) return { ok: false };
+            
+            const creds = getSyncCredentials();
+            if(!creds.token || !creds.gistId) return { ok: false, noCreds: true };
+            
+            isSyncingLock = true;
+            const syncBtn = document.getElementById('btnCloudSync');
+            if(syncBtn) syncBtn.classList.add('spinning');
+            
+            try {
+                if(!skipConflictCheck) {
+                    try {
+                        const checkRes = await fetch(`https://api.github.com/gists/${creds.gistId}?_cb=${Date.now()}`, {
+                            method: 'GET',
+                            headers: { 'Authorization': `token ${creds.token}` }
+                        });
+                        if(checkRes.ok) {
+                            const checkData = await checkRes.json();
+                            if(checkData.files && checkData.files["re_inventory.json"]) {
+                                const cloudNow = JSON.parse(checkData.files["re_inventory.json"].content);
+                                const cloudNowUpdatedAt = cloudNow.updatedAt || 0;
+                                if(cloudNowUpdatedAt > lastKnownCloudUpdatedAt && cloudNowUpdatedAt !== globalState.updatedAt) {
+                                    return { ok: false, conflict: true };
+                                }
+                            }
+                        }
+                    } catch(e) { }
+                }
+
+                const res = await fetch(`https://api.github.com/gists/${creds.gistId}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `token ${creds.token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        files: { "re_inventory.json": { content: JSON.stringify(globalState, null, 2) } }
+                    })
+                });
+                if(!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+                lastKnownCloudUpdatedAt = globalState.updatedAt;
+                return { ok: true };
+            } catch(e) { 
+                return { ok: false, error: e.message, offline: !navigator.onLine };
+            } finally { 
+                isSyncingLock = false;
+                if(syncBtn) syncBtn.classList.remove('spinning'); 
+                updateSyncStatus();
+            }
+        }
+
+        async function manualSync() {
+            if (!navigator.onLine) { toast('No hay conexión a internet.', 'error'); return; }
+            const creds = getSyncCredentials();
+            if(!creds.token || !creds.gistId) { await forceSetupCredentials(); return; }
+            
+            clearTimeout(pushDebounceTimer);
+            const pullResult = await autoPullFromCloud(true);
+            if(!pullResult.ok) {
+                lastSyncHadError = true;
+                updateSyncStatus();
+                toast(`❌ Falló la descarga.`, 'error');
+                return;
+            }
+            if(pullResult.adopted) {
+                lastSyncHadError = false;
+                toast('☁️ Se descargaron cambios de la nube.', 'success');
+                return;
+            }
+            const pushResult = await autoPushToCloud(true, true);
+            if(!pushResult.ok) {
+                lastSyncHadError = true;
+                updateSyncStatus();
+                toast(`❌ No se pudo subir.`, 'error');
+                return;
+            }
+            hasUnsyncedChanges = false;
+            lastSyncHadError = false;
+            updateSyncStatus();
+            toast('🔄 Sincronizado correctamente.', 'success');
+        }
+
+        // --- SCRAPER CIENT-SIDE ---
+        btn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) return showMsg("URL inválida.", "error");
 
             showMsg("Obteniendo publicación vía Proxy CORS...", "info");
             btn.disabled = true;
@@ -308,11 +541,9 @@
             try {
                 const htmlText = await fetchPropertyHtml(url);
                 const extractedData = extractPropertyData(htmlText, url);
-                
-                properties.unshift(extractedData);
+                globalState.properties.unshift(extractedData);
                 saveLocalDb();
                 renderList();
-                
                 urlInput.value = '';
                 status.style.display = "none";
             } catch (err) {
@@ -324,10 +555,9 @@
 
         async function fetchPropertyHtml(targetUrl) {
             const proxies = [
-                u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-                u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`
+                u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+                u => `https://corsproxy.io/?${encodeURIComponent(u)}`
             ];
-
             for (let proxyFn of proxies) {
                 try {
                     const res = await fetch(proxyFn(targetUrl));
@@ -335,26 +565,15 @@
                         const text = await res.text();
                         if (text && text.length > 500) return text;
                     }
-                } catch(e) { console.warn("Proxy attempt failed:", e); }
+                } catch(e) {}
             }
-            throw new Error("No se pudo acceder a la URL por restricciones de CORS. Verificá el link o cargá los datos de forma manual.");
+            throw new Error("No se pudo acceder por restricciones CORS. Verificá el link.");
         }
 
         function extractPropertyData(text, url) {
             const id = 'id_' + Math.random().toString(36).substr(2, 9);
-            let tipo = "Inmueble";
-            let direccion = "Dirección no especificada";
-            let precio = "Consultar";
-            let expensas = "";
-            let ambientes = "";
-            let dormitorios = "";
-            let banos = "";
-            let cocheras = "";
-            let metros_tot = "";
-            let metros_cub = "";
-            let latitude = "";
-            let longitude = "";
-            let imagen = "";
+            let tipo = "Inmueble", direccion = "Dirección no especificada", precio = "Consultar", expensas = "";
+            let ambientes = "", dormitorios = "", banos = "", cocheras = "", metros_tot = "", metros_cub = "", latitude = "", longitude = "", imagen = "";
 
             const urlLower = url.toLowerCase();
 
@@ -364,32 +583,24 @@
                     try {
                         const sJson = JSON.parse(schemaMatch[1]);
                         if (sJson.image) imagen = sJson.image;
-                        if (sJson.offers && sJson.offers.price) {
-                            precio = `${sJson.offers.priceCurrency || 'USD'} ${sJson.offers.price}`.trim();
-                        }
+                        if (sJson.offers && sJson.offers.price) precio = `${sJson.offers.priceCurrency || 'USD'} ${sJson.offers.price}`.trim();
                     } catch(e){}
                 }
 
                 const labelLocMatch = text.match(/"target"\s*:\s*"location_and_points"[^}]+?"text"\s*:\s*"([^"]+)"/i);
-                if (labelLocMatch) {
-                    direccion = labelLocMatch[1].trim();
-                } else {
+                if (labelLocMatch) direccion = labelLocMatch[1].trim();
+                else {
                     const addrM = text.match(/"item_address"\s*:\s*"([^"]+)"/i);
                     const locM = text.match(/"item_location"\s*:\s*"([^"]+)"/i);
                     if (addrM) {
                         direccion = addrM[1].trim();
-                        if (locM && !direccion.toLowerCase().includes(locM[1].split(',')[0].toLowerCase())) {
-                            direccion += `, ${locM[1].split(',')[0].trim()}`;
-                        }
+                        if (locM && !direccion.toLowerCase().includes(locM[1].split(',')[0].toLowerCase())) direccion += `, ${locM[1].split(',')[0].trim()}`;
                     }
                 }
 
                 const latM = text.match(/"latitude"\s*:\s*"?(-?\d+\.\d+)"?/i);
                 const lngM = text.match(/"longitude"\s*:\s*"?(-?\d+\.\d+)"?/i);
-                if (latM && lngM) {
-                    latitude = latM[1];
-                    longitude = lngM[1];
-                }
+                if (latM && lngM) { latitude = latM[1]; longitude = lngM[1]; }
             }
 
             const cleanText = text.replace(/<(script|style)[^>]*>.*?<\/\1>/gis, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
@@ -417,16 +628,13 @@
                 if (imgM) imagen = imgM[1];
             }
 
-            return {
-                id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras,
-                metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0,
-                latitude, longitude, imagen, url
-            };
+            return { id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras, metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0, latitude, longitude, imagen, url };
         }
 
+        // --- CRUD ACTIONS ---
         window.deleteProperty = function(id) {
             if(!confirm("¿Seguro que deseas eliminar esta propiedad?")) return;
-            properties = properties.filter(p => p.id !== id);
+            globalState.properties = globalState.properties.filter(p => p.id !== id);
             itineraryIds.delete(id);
             updateItineraryCount();
             saveLocalDb();
@@ -434,32 +642,27 @@
         };
 
         window.editProperty = function(id) {
-            const prop = properties.find(p => p.id === id);
+            const prop = globalState.properties.find(p => p.id === id);
             if(!prop) return;
 
             const newDireccion = prompt("Actualizar Dirección:", prop.direccion || "");
             if (newDireccion === null) return;
-
             const newPrecio = prompt("Actualizar Precio:", prop.precio || "");
             if (newPrecio === null) return; 
-            
             const newExpensas = prompt("Actualizar Expensas:", prop.expensas || "");
             if (newExpensas === null) return;
 
             if (newDireccion.trim() !== (prop.direccion || "").trim()) {
-                prop.latitude = "";
-                prop.longitude = "";
+                prop.latitude = ""; prop.longitude = "";
             }
 
-            prop.direccion = newDireccion;
-            prop.precio = newPrecio;
-            prop.expensas = newExpensas;
+            prop.direccion = newDireccion; prop.precio = newPrecio; prop.expensas = newExpensas;
             saveLocalDb();
             renderList();
         };
 
         window.setRanking = function(id, rating) {
-            const prop = properties.find(p => p.id === id);
+            const prop = globalState.properties.find(p => p.id === id);
             if (!prop) return;
             prop.ranking = prop.ranking === rating ? 0 : rating;
             saveLocalDb();
@@ -467,14 +670,13 @@
         };
 
         window.updateSchoolData = function(id) {
-            const prop = properties.find(p => p.id === id);
+            const prop = globalState.properties.find(p => p.id === id);
             const dist = prompt("Ingresa distancia al colegio (ej: 2.5 km):", prop.distancia_cole || "");
             if (dist === null) return; 
             const time = prompt("Ingresa tiempo estimado (ej: 15 min):", prop.tiempo_cole || "");
             if (time === null) return;
 
-            prop.distancia_cole = dist;
-            prop.tiempo_cole = time;
+            prop.distancia_cole = dist; prop.tiempo_cole = time;
             saveLocalDb();
             renderList();
         };
@@ -488,7 +690,6 @@
         function selectAllItinerary() {
             const currentList = getFilteredProperties();
             if (currentList.length === 0) return;
-            
             const allSelected = currentList.every(p => itineraryIds.has(p.id));
             currentList.forEach(p => {
                 if (allSelected) itineraryIds.delete(p.id);
@@ -502,6 +703,7 @@
             document.getElementById('itineraryCount').innerText = itineraryIds.size;
         }
 
+        // --- MAP LOGIC ---
         function openAddressInGoogleMaps(address) {
             let a = address;
             if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
@@ -511,33 +713,20 @@
         function isCabaAddress(direccionStr) {
             if (!direccionStr) return false;
             const str = direccionStr.toLowerCase();
-            return str.includes("caba") || str.includes("capital federal") || str.includes("ciudad autónoma de buenos aires") || str.includes("capital");
+            return str.includes("caba") || str.includes("capital federal") || str.includes("ciudad autónoma") || str.includes("capital");
         }
 
         function sanitizeAddressForGeocoding(addr, level = 0) {
             if (!addr || addr === "Dirección no especificada") return "";
             let clean = addr;
-
             if (level === 0) {
-                clean = clean.replace(/\s+al\s+(\d+)/gi, ' $1');
-                clean = clean.replace(/\b(gral|av|dr)\b\.?/gi, (m) => {
-                    const l = m.toLowerCase();
-                    if (l.startsWith('gral')) return 'General';
-                    if (l.startsWith('av')) return 'Avenida';
-                    if (l.startsWith('dr')) return 'Doctor';
-                    return m;
-                });
-                clean = clean.replace(/\d+°\s*[a-zA-Z]?/gi, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
+                clean = clean.replace(/\s+al\s+(\d+)/gi, ' $1').replace(/\b(gral|av|dr)\b\.?/gi, m => m.toLowerCase().startsWith('g') ? 'General' : m.toLowerCase().startsWith('a') ? 'Avenida' : 'Doctor').replace(/\d+°\s*[a-zA-Z]?/gi, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
             } else if (level === 1) {
                 clean = clean.replace(/\s+al\s+\d+/gi, '').replace(/\s+\d+/g, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
-            } else if (level === 2) {
-                const parts = clean.split(',');
-                clean = parts.length > 1 ? parts[parts.length - 1].trim() : clean;
+            } else {
+                const parts = clean.split(','); clean = parts.length > 1 ? parts[parts.length - 1].trim() : clean;
             }
-
-            if (!clean.toLowerCase().includes("buenos aires") && !clean.toLowerCase().includes("capital")) {
-                clean += ", Buenos Aires, Argentina";
-            }
+            if (!clean.toLowerCase().includes("buenos aires") && !clean.toLowerCase().includes("capital")) clean += ", Buenos Aires, Argentina";
             return clean;
         }
 
@@ -547,33 +736,21 @@
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
                 if (!res.ok) return null;
                 const data = await res.json();
-                if (data && data.length > 0) {
-                    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                }
-            } catch(e) { console.warn("Geocode error:", e); }
+                if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+            } catch(e) {}
             return null;
         }
 
         async function geocodeAddressWithFallbacks(p) {
-            if (p.latitude && p.longitude) {
-                const lat = parseFloat(p.latitude);
-                const lon = parseFloat(p.longitude);
-                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) return { lat, lon, approx: false };
-            }
-
+            if (p.latitude && p.longitude) return { lat: parseFloat(p.latitude), lon: parseFloat(p.longitude), approx: false };
             let coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 0));
             if (coords) return { ...coords, approx: false };
-
             await new Promise(r => setTimeout(r, 400));
             coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 1));
             if (coords) return { ...coords, approx: true };
-
             await new Promise(r => setTimeout(r, 400));
             coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 2));
-            if (coords) {
-                return { lat: coords.lat + (Math.random() - 0.5) * 0.008, lon: coords.lon + (Math.random() - 0.5) * 0.008, approx: true };
-            }
-
+            if (coords) return { lat: coords.lat + (Math.random() - 0.5) * 0.008, lon: coords.lon + (Math.random() - 0.5) * 0.008, approx: true };
             return { lat: -34.5085 + (Math.random() - 0.5) * 0.015, lon: -58.4988 + (Math.random() - 0.5) * 0.015, approx: true };
         }
 
@@ -592,36 +769,27 @@
         }
 
         async function openMapModal() {
-            const modal = document.getElementById('mapModal');
-            modal.classList.add('active');
-
+            document.getElementById('mapModal').classList.add('active');
             if (!mapInstance) {
                 mapInstance = L.map('mapContainer').setView([-34.5102, -58.4924], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '© OpenStreetMap'
-                }).addTo(mapInstance);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OS' }).addTo(mapInstance);
                 markersGroup = L.featureGroup().addTo(mapInstance);
             }
-
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 250);
             markersGroup.clearLayers();
 
-            const schoolLat = -34.5085, schoolLon = -58.4988;
             const schoolIcon = L.divIcon({
                 className: 'custom-school-pin',
                 html: '<div style="background:#8b5cf6;color:white;padding:4px 8px;border-radius:12px;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);white-space:nowrap;">🏫 Col. San Carlos</div>',
-                iconSize: [120, 30],
-                iconAnchor: [60, 15]
+                iconSize: [120, 30], iconAnchor: [60, 15]
             });
-            L.marker([schoolLat, schoolLon], { icon: schoolIcon }).addTo(markersGroup).bindPopup('<b>Colegio San Carlos Diálogos</b><br>Gral. José María Paz 2431, Olivos');
+            L.marker([-34.5085, -58.4988], { icon: schoolIcon }).addTo(markersGroup).bindPopup('<b>Colegio San Carlos Diálogos</b>');
 
-            const targetProps = (itineraryIds.size > 0) ? properties.filter(p => itineraryIds.has(p.id)) : properties;
+            const targetProps = (itineraryIds.size > 0) ? globalState.properties.filter(p => itineraryIds.has(p.id)) : globalState.properties;
 
             for (const p of targetProps) {
                 if (p.latitude && p.longitude) addPropertyMarker(p, parseFloat(p.latitude), parseFloat(p.longitude), false);
             }
-
             if (markersGroup.getLayers().length > 1) mapInstance.fitBounds(markersGroup.getBounds().pad(0.1));
 
             for (const p of targetProps) {
@@ -629,8 +797,7 @@
                     const res = await geocodeAddressWithFallbacks(p);
                     if (res) {
                         if (!res.approx) {
-                            p.latitude = String(res.lat);
-                            p.longitude = String(res.lon);
+                            p.latitude = String(res.lat); p.longitude = String(res.lon);
                             saveLocalDb();
                         }
                         addPropertyMarker(p, res.lat, res.lon, res.approx);
@@ -640,158 +807,91 @@
             }
         }
 
-        function closeMapModal() {
-            document.getElementById('mapModal').classList.remove('active');
-        }
+        function closeMapModal() { document.getElementById('mapModal').classList.remove('active'); }
 
         function generateItineraryMapsLink() {
-            if (itineraryIds.size === 0) {
-                alert("Seleccioná al menos una propiedad con el tilde '🚗 Itinerario' para armar la ruta.");
-                return;
-            }
-            const selectedProps = properties.filter(p => itineraryIds.has(p.id));
-            if (selectedProps.length === 0) return;
-
-            const schoolAddr = "Colegio San Carlos Dialogos, Gral. José María Paz 2431, Olivos, Buenos Aires";
+            if (itineraryIds.size === 0) return alert("Seleccioná propiedades.");
+            const selectedProps = globalState.properties.filter(p => itineraryIds.has(p.id));
             const addrs = selectedProps.map(p => {
                 let a = p.direccion || "";
                 if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
                 return a;
             });
 
-            let origin = schoolAddr;
+            let origin = "Colegio San Carlos Dialogos, Olivos, Buenos Aires";
             let destination = (selectedProps.length === 1) ? addrs[0] : addrs[addrs.length - 1];
             let waypoints = (selectedProps.length === 1) ? [] : addrs.slice(0, -1);
-
             let url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
             if (waypoints.length > 0) url += `&waypoints=${waypoints.map(encodeURIComponent).join('|')}`;
-
             window.open(url, '_blank');
         }
 
-        function openSyncDialog() {
-            const act = prompt("Escribí 'EXPORTAR' para descargar backup en JSON, o pegá tu código JSON para 'IMPORTAR':");
-            if (!act) return;
-
-            if (act.trim().toUpperCase() === 'EXPORTAR') {
-                const blob = new Blob([JSON.stringify(properties, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `propiedades_backup_${new Date().toISOString().slice(0,10)}.json`;
-                a.click();
-            } else {
-                try {
-                    const parsed = JSON.parse(act);
-                    if (Array.isArray(parsed)) {
-                        properties = parsed;
-                        saveLocalDb();
-                        renderList();
-                        alert("¡Base de datos importada exitosamente!");
-                    } else { alert("Formato JSON inválido."); }
-                } catch(e) { alert("Error al parsear el JSON ingresado."); }
-            }
-        }
-
         function showMsg(msg, type) {
-            status.className = `alert ${type}`;
-            status.style.display = "block";
-            status.innerText = msg;
+            status.className = `alert ${type}`; status.style.display = "block"; status.innerText = msg;
         }
 
         function generateWaLink(p) {
-            const text = `Mirá este ${p.tipo} en ${p.direccion}.\\nValor: ${p.precio}\\nLink: ${p.url}`;
-            return `https://wa.me/?text=${encodeURIComponent(text)}`;
+            return `https://wa.me/?text=${encodeURIComponent(`Mirá este ${p.tipo} en${p.direccion}.\\nValor: ${p.precio}\\nLink:${p.url}`)}`;
         }
 
         function generateMapsLink(p) {
-            let origin = p.direccion || "";
-            if(!origin.toLowerCase().includes("buenos aires") && !origin.toLowerCase().includes("capital")) origin += ", Buenos Aires, Argentina";
-            const dest = "Colegio San Carlos Dialogos, Gral. José María Paz 2431, B1636BFI Olivos, Provincia de Buenos Aires";
-            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}`;
+            let a = p.direccion || "";
+            if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
+            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a)}&destination=Colegio San Carlos Dialogos, Olivos, Buenos Aires`;
         }
 
-        function parseNumericVal(str) {
-            if (!str) return 0;
-            return parseInt(String(str).replace(/[^0-9]/g, ''), 10) || 0;
-        }
-
+        function parseNumericVal(str) { return parseInt(String(str).replace(/[^0-9]/g, ''), 10) || 0; }
+        
         function parseFloatVal(str) {
             if (!str) return 999999;
-            let clean = str.toLowerCase().replace(',', '.');
-            let num = parseFloat(clean.replace(/[^0-9.]/g, ''));
-            if (isNaN(num)) return 999999;
-            if (clean.includes('m') && !clean.includes('km')) num = num / 1000;
-            return num;
+            let num = parseFloat(str.toLowerCase().replace(',', '.').replace(/[^0-9.]/g, ''));
+            return isNaN(num) ? 999999 : (str.toLowerCase().includes('m') && !str.toLowerCase().includes('km') ? num / 1000 : num);
         }
 
         function getCurrency(str) {
-            if (!str) return "$";
-            const upper = str.toUpperCase();
-            if (upper.includes("USD") || upper.includes("U$S") || upper.includes("US$")) return "USD";
-            return "$";
+            const upper = String(str).toUpperCase();
+            return (upper.includes("USD") || upper.includes("U$S") || upper.includes("US$")) ? "USD" : "$";
         }
 
-        function formatMoney(num, currency) {
-            return `${currency === 'USD' ? 'US$' : '$'} ${num.toLocaleString('es-AR')}`;
-        }
+        function formatMoney(num, currency) { return `${currency === 'USD' ? 'US$' : '$'} ${num.toLocaleString('es-AR')}`; }
 
         function getTotalUsdHtml(precioStr, expensasStr) {
             if (!precioStr || dolarBlueRate <= 0) return "";
-            const precio = parseNumericVal(precioStr);
-            const expensas = parseNumericVal(expensasStr) || 0;
-            const precioCurr = getCurrency(precioStr);
-            const expensasCurr = getCurrency(expensasStr);
-
+            const precio = parseNumericVal(precioStr), expensas = parseNumericVal(expensasStr) || 0;
+            const pCurr = getCurrency(precioStr), eCurr = getCurrency(expensasStr);
             if (precio <= 0) return "";
-
-            let totalUsd = (precioCurr === 'USD') ? precio : (precio / dolarBlueRate);
-            if (expensas > 0) {
-                totalUsd += (expensasCurr === 'USD') ? expensas : (expensas / dolarBlueRate);
-            }
-
-            totalUsd = Math.round(totalUsd);
-            if (precioCurr === 'USD' && expensas === 0) return "";
-
-            return `<span class="badge-usd-sub" title="Cotización Blue ($${dolarBlueRate})">(~US$ ${totalUsd.toLocaleString('es-AR')})</span>`;
+            let total = (pCurr === 'USD') ? precio : (precio / dolarBlueRate);
+            if (expensas > 0) total += (eCurr === 'USD') ? expensas : (expensas / dolarBlueRate);
+            if (pCurr === 'USD' && expensas === 0) return "";
+            return `<span class="badge-usd-sub" title="Cotización Blue ($${dolarBlueRate})">(~US$ ${Math.round(total).toLocaleString('es-AR')})</span>`;
         }
 
         function generateCostsHtml(precioStr, direccionStr) {
             const alquiler = parseNumericVal(precioStr);
             if (alquiler === 0) return '';
-            
             const currency = getCurrency(precioStr);
-            const deposito = alquiler;
             const isCaba = isCabaAddress(direccionStr);
             const comision = isCaba ? 0 : (alquiler * 24 * 0.05);
-            const totalGral = deposito + comision;
-            
             return `
                 <div class="entry-costs">
-                    <h4>Condiciones de Entrada ${isCaba ? '<small style="font-weight:600;font-size:0.7rem;color:var(--whatsapp);margin-left:4px;">(CABA - Sin comisión)</small>' : ''}</h4>
+                    <h4>Condiciones Entrada ${isCaba ? '<small style="color:var(--whatsapp);">(CABA - Sin comisión)</small>' : ''}</h4>
                     <div class="entry-costs-grid">
-                        <div class="cost-item"><span>Depósito (1m):</span> <strong>${formatMoney(deposito, currency)}</strong></div>
+                        <div class="cost-item"><span>Depósito (1m):</span> <strong>${formatMoney(alquiler, currency)}</strong></div>
                         ${!isCaba ? `<div class="cost-item"><span>Comisión (5%):</span> <strong>${formatMoney(comision, currency)}</strong></div>` : ''}
-                        <div class="cost-item cost-item-total">
-                            <span>Total (Dep${!isCaba ? ' + Com' : ''}):</span> <strong>${formatMoney(totalGral, currency)}</strong>
-                        </div>
+                        <div class="cost-item cost-item-total"><span>Total:</span> <strong>${formatMoney(alquiler + comision, currency)}</strong></div>
                     </div>
                 </div>
             `;
         }
 
         function getFilteredProperties() {
-            const searchTerm = filterText.value.toLowerCase();
-            const typeTerm = filterType.value;
-            const currencyTerm = filterCurrency.value;
-
-            return properties.filter(p => {
-                const matchText = (p.direccion || "").toLowerCase().includes(searchTerm) || (p.tipo || "").toLowerCase().includes(searchTerm);
-                const matchType = typeTerm === "ALL" || (p.tipo || "").includes(typeTerm);
-                let matchCurrency = true;
-                const priceStr = (p.precio || "").toUpperCase();
-                if (currencyTerm === "ARS") matchCurrency = !priceStr.includes("USD") && !priceStr.includes("U$S");
-                else if (currencyTerm === "USD") matchCurrency = priceStr.includes("USD") || priceStr.includes("U$S");
-                return matchText && matchType && matchCurrency;
+            const s = filterText.value.toLowerCase(), t = filterType.value, c = filterCurrency.value;
+            return globalState.properties.filter(p => {
+                const matchTxt = (p.direccion || "").toLowerCase().includes(s) || (p.tipo || "").toLowerCase().includes(s);
+                const matchType = t === "ALL" || (p.tipo || "").includes(t);
+                const isUsd = (p.precio || "").toUpperCase().includes("US");
+                const matchCurr = c === "ALL" ? true : (c === "USD" ? isUsd : !isUsd);
+                return matchTxt && matchType && matchCurr;
             });
         }
 
@@ -817,65 +917,45 @@
             }
             
             list.innerHTML = processedProps.map(p => {
-                const makeBadge = (label, value) => {
-                    if (!value || value === "N/A" || value === "") return "";
-                    return `<div class="badge">${label} <strong>${value}</strong></div>`;
-                };
-
-                const schoolData = (p.distancia_cole || p.tiempo_cole) 
-                    ? `${p.distancia_cole} | ${p.tiempo_cole}` 
-                    : `<span style="color:var(--accent);">+ Cole. S.C.</span>`;
-
-                const hasExpensas = p.expensas && p.expensas !== "N/A" && p.expensas !== "0" && p.expensas !== "$0";
-                const expText = hasExpensas ? `+ ${p.expensas} exp.` : "";
-
-                const starsHtml = [1,2,3,4,5].map(star => `
-                    <span class="star ${star <= (p.ranking || 0) ? 'active' : ''}" onclick="setRanking('${p.id}', ${star})">★</span>
-                `).join('');
-
-                const escapedAddress = (p.direccion || "").replace(/'/g, "\\'");
+                const mk = (lbl, val) => (!val || val === "N/A" || val === "") ? "" : `<div class="badge">${lbl} <strong>${val}</strong></div>`;
+                const schoolData = (p.distancia_cole || p.tiempo_cole) ? `${p.distancia_cole} | ${p.tiempo_cole}` : `<span style="color:var(--accent);">+ Cole. S.C.</span>`;
+                const hasExp = p.expensas && p.expensas !== "N/A" && p.expensas !== "0" && p.expensas !== "$0";
+                const stars = [1,2,3,4,5].map(s => `<span class="star ${s <= (p.ranking || 0) ? 'active' : ''}" onclick="setRanking('${p.id}', ${s})">★</span>`).join('');
 
                 return `
                 <div class="card">
                     ${p.imagen ? `<img src="${p.imagen}" class="card-img" alt="Preview">` : `<div class="card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;font-weight:600;">SIN IMAGEN</div>`}
-                    
                     <div class="card-content">
                         <div class="card-header">
                             <div>
                                 <div class="prop-title">${p.tipo}</div>
-                                <div class="prop-address" title="Click para buscar en Google Maps" onclick="openAddressInGoogleMaps('${escapedAddress}')">
-                                    📍 ${p.direccion}
-                                </div>
+                                <div class="prop-address" title="Buscar en Maps" onclick="openAddressInGoogleMaps('${(p.direccion || "").replace(/'/g, "\\'")}')">📍 ${p.direccion}</div>
                             </div>
-                            <div class="star-rating" title="Asignar Ranking">${starsHtml}</div>
+                            <div class="star-rating">${stars}</div>
                         </div>
-                        
                         <div class="metrics-grid">
                             <div class="badge highlight">
                                 <span>Valor</span> 
                                 <div style="text-align: right;">
                                     <strong>${p.precio}</strong>
-                                    ${hasExpensas ? `<span style="font-size:0.85rem; font-weight:600; color:var(--badge-hl-text); margin-left:4px;">${expText}</span>` : ''}
+                                    ${hasExp ? `<span style="font-size:0.85rem; font-weight:600; color:var(--badge-hl-text); margin-left:4px;">+ ${p.expensas} exp.</span>` : ''}
                                     ${getTotalUsdHtml(p.precio, p.expensas)}
                                 </div>
                             </div>
-                            <div class="badge badge-interactive" onclick="updateSchoolData('${p.id}')" title="Editar parámetros del colegio">
+                            <div class="badge badge-interactive" onclick="updateSchoolData('${p.id}')">
                                 <span>Distancia a colegio</span> <strong>${schoolData}</strong>
                             </div>
-                            ${makeBadge("Totales", p.metros_tot ? p.metros_tot + ' m²' : null)}
-                            ${makeBadge("Ambientes", p.ambientes)}
-                            ${makeBadge("Dormitorios", p.dormitorios)}
-                            ${makeBadge("Baños", p.banos)}
-                            ${makeBadge("Cocheras", p.cocheras)}
+                            ${mk("Totales", p.metros_tot ? p.metros_tot + ' m²' : null)}
+                            ${mk("Ambientes", p.ambientes)}
+                            ${mk("Dormitorios", p.dormitorios)}
+                            ${mk("Baños", p.banos)}
+                            ${mk("Cocheras", p.cocheras)}
                         </div>
-
                         ${generateCostsHtml(p.precio, p.direccion)}
-
                         <label class="itinerary-toggle">
                             <input type="checkbox" ${itineraryIds.has(p.id) ? 'checked' : ''} onchange="toggleItinerary('${p.id}')">
                             🚗 Incluir en Itinerario de Visita
                         </label>
-                        
                         <div class="card-actions">
                             <a href="${generateWaLink(p)}" target="_blank" class="wa-btn">WhatsApp</a>
                             <a href="${generateMapsLink(p)}" target="_blank" class="school-btn">Ruta Cole</a>
@@ -887,6 +967,12 @@
                 </div>
             `}).join('');
         }
+
+        window.addEventListener('online', () => { fetchDolarRate(); autoPullFromCloud(); });
+        window.addEventListener('offline', () => { updateSyncStatus(); });
+        document.addEventListener("visibilitychange", async () => {
+            if (!document.hidden && navigator.onLine) await autoPullFromCloud();
+        });
     </script>
 </body>
 </html>
