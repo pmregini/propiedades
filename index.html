@@ -89,7 +89,9 @@
         .btn-glass { border: none; font-weight: 600; font-size: 0.85rem; min-height: 44px; padding: 8px 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; flex: 1 1 auto; }
         .btn-glass:active { opacity: 0.7; }
         
+        .btn-select-all { background: rgba(10, 132, 255, 0.12); color: var(--accent); }
         .btn-map { background: rgba(90, 200, 250, 0.12); color: var(--teal); }
+        .btn-itinerary { background: rgba(48, 209, 88, 0.12); color: var(--whatsapp); }
 
         .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         
@@ -126,6 +128,9 @@
         .cost-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 0.5px solid var(--border-light); font-weight: 500; }
         .cost-item:last-child { border-bottom: none; }
         .cost-item-total { font-weight: 700; color: var(--accent); background: rgba(10, 132, 255, 0.04); }
+
+        .itinerary-toggle { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--text-main); min-height: 44px; }
+        .itinerary-toggle input { margin: 0; width: 18px; height: 18px; accent-color: var(--whatsapp); cursor: pointer; }
 
         .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; border-top: 0.5px solid var(--border-light); padding-top: 12px; }
         .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 36px; border-radius: 10px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
@@ -211,7 +216,7 @@
                 <option value="price_desc">Precio (Mayor a Menor)</option>
             </select>
             
-            <button class="btn-glass btn-map" onclick="openMapModal()">🗺️ Abrir Mapa Interactívo</button>
+            <button class="btn-glass btn-map" onclick="openMapModal()">🗺️ Abrir Mapa Interactivo</button>
         </div>
 
         <div class="list-container" id="inventoryList"></div>
@@ -271,6 +276,7 @@
         const sortType = document.getElementById('sortType');
 
         let globalState = { updatedAt: 0, properties: [] };
+        let itineraryIds = new Set();
         let dolarBlueRate = 1300; 
 
         let mapInstance = null;
@@ -649,6 +655,7 @@
         window.deleteProperty = function(id) {
             if(!confirm("¿Remover esta propiedad?")) return;
             globalState.properties = globalState.properties.filter(p => p.id !== id);
+            itineraryIds.delete(id);
             saveLocalDb();
             renderList();
         };
@@ -663,7 +670,7 @@
             if (newPrecio === null) return; 
             const newExpensas = prompt("Expensas:", prop.expensas || "");
             if (newExpensas === null) return;
-            
+
             const newCoords = prompt("Coordenadas GPS (lat,lon) o dejá en blanco para auto-buscar:", (prop.latitude && prop.longitude) ? `${prop.latitude}, ${prop.longitude}` : "");
 
             if (newDireccion.trim() !== (prop.direccion || "").trim()) {
@@ -840,7 +847,7 @@
                     ${approxTag}
                     <div style="display:flex; gap:6px; margin-top:8px;">
                         <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Abrir GPS</a>
-                        ${isApprox ? `<button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>` : `<button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>`}
+                        <button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>
                     </div>
                 </div>
             `;
@@ -907,6 +914,15 @@
             return (upper.includes("USD") || upper.includes("U$S") || upper.includes("US$")) ? "USD" : "$";
         }
 
+        function getPriceInUsd(precioStr) {
+            if (!precioStr) return 0;
+            const val = parseNumericVal(precioStr);
+            if (val <= 0) return 0;
+            const curr = getCurrency(precioStr);
+            if (curr === 'USD') return val;
+            return (dolarBlueRate > 0) ? (val / dolarBlueRate) : val;
+        }
+
         function formatMoney(num, currency) { return `${currency === 'USD' ? 'US$' : '$'} ${num.toLocaleString('es-AR')}`; }
 
         function getTotalUsdHtml(precioStr, expensasStr) {
@@ -960,8 +976,8 @@
                 processedProps.sort((a, b) => {
                     if (sortTerm === 'ranking_desc') return (b.ranking || 0) - (a.ranking || 0);
                     if (sortTerm === 'dist_asc') return parseFloatVal(a.distancia_cole) - parseFloatVal(b.distancia_cole);
-                    if (sortTerm === 'price_asc') return parseNumericVal(a.precio) - parseNumericVal(b.precio);
-                    if (sortTerm === 'price_desc') return parseNumericVal(b.precio) - parseNumericVal(a.precio);
+                    if (sortTerm === 'price_asc') return getPriceInUsd(a.precio) - getPriceInUsd(b.precio);
+                    if (sortTerm === 'price_desc') return getPriceInUsd(b.precio) - getPriceInUsd(a.precio);
                     if (sortTerm === 'rooms_desc') return parseNumericVal(b.ambientes) - parseNumericVal(a.ambientes);
                     if (sortTerm === 'sqm_desc') return parseNumericVal(b.metros_tot) - parseNumericVal(a.metros_tot);
                     return 0;
