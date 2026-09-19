@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Real Estate APP</title>
+    <title>Real Estate Extractor // Premium Sync</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -142,7 +142,6 @@
         .edit-btn { color: var(--warning); border-color: rgba(255,159,10,0.3); background: rgba(255,159,10,0.06); }
         .delete-btn { color: var(--danger); border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); }
 
-        /* Settings Footer for Mobile */
         .settings-footer { margin-top: 30px; padding-top: 20px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .backup-actions { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 500px; }
         .btn-sync { background: rgba(175, 82, 222, 0.12); color: var(--school); width: 100%; max-width: 500px; }
@@ -775,15 +774,28 @@
             return { lat: -34.5085 + (Math.random() - 0.5) * 0.015, lon: -58.4988 + (Math.random() - 0.5) * 0.015, approx: true };
         }
 
+        function generateGpsToPropertyLink(p, lat, lon) {
+            let dest = p.direccion || "";
+            if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+                dest = `${lat},${lon}`;
+            } else {
+                if (!dest.toLowerCase().includes("buenos aires") && !dest.toLowerCase().includes("capital")) {
+                    dest += ", Buenos Aires, Argentina";
+                }
+            }
+            return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
+        }
+
         function addPropertyMarker(p, lat, lon, isApprox = false) {
             const approxTag = isApprox ? '<div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:2px;">⚠️ Ubicación aprox.</div>' : '';
+            const gpsUrl = generateGpsToPropertyLink(p, lat, lon);
             const popupContent = `
                 <div style="color:#000; font-family:-apple-system, BlinkMacSystemFont, sans-serif; max-width:200px;">
                     ${p.imagen ? `<img src="${p.imagen}" style="width:100%;height:100px;object-fit:cover;border-radius:10px;margin-bottom:8px;">` : ''}
                     <strong style="font-size:13px;display:block;">${p.tipo} - ${p.precio}</strong>
                     <div style="font-size:11px;color:#666;margin-bottom:2px;line-height:1.2;">📍 ${p.direccion}</div>
                     ${approxTag}
-                    <a href="${generateMapsLink(p)}" target="_blank" style="display:inline-block;margin-top:8px;background:var(--accent);color:white;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS</a>
+                    <a href="${gpsUrl}" target="_blank" style="display:inline-block;margin-top:8px;background:var(--accent);color:white;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS →</a>
                 </div>
             `;
             L.marker([lat, lon]).addTo(markersGroup).bindPopup(popupContent);
@@ -793,7 +805,7 @@
             document.getElementById('mapModal').classList.add('active');
             if (!mapInstance) {
                 mapInstance = L.map('mapContainer').setView([-34.5102, -58.4924], 13);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapInstance);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapInstance);
                 markersGroup = L.featureGroup().addTo(mapInstance);
             }
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
@@ -852,9 +864,7 @@
         }
 
         function generateMapsLink(p) {
-            let a = p.direccion || "";
-            if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
-            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(a)}&destination=Colegio San Carlos Dialogos, Olivos, Buenos Aires`;
+            return generateGpsToPropertyLink(p, parseFloat(p.latitude), parseFloat(p.longitude));
         }
 
         function parseNumericVal(str) { return parseInt(String(str).replace(/[^0-9]/g, ''), 10) || 0; }
