@@ -2,12 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Real Estate Extractor // Premium Sync</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Real Estate APP</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        /* Apple Premium Palette */
         :root { 
             --bg: #F2F2F7; 
             --panel: #FFFFFF; 
@@ -54,7 +53,7 @@
         .status-badge { background: transparent; color: var(--text-muted); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; border: 0.5px solid var(--border); transition: all 0.3s; }
         
         .cloud-sync-wrap { position: relative; display: flex; align-items: center; gap: 4px; }
-        .btn-cloud-sync { background: var(--badge-bg); border: none; color: var(--text-main); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; transition: transform 0.2s; }
+        .btn-cloud-sync { background: var(--badge-bg); border: none; color: var(--text-main); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: transform 0.2s; }
         .btn-cloud-sync:active { transform: scale(0.9); }
         .btn-cloud-sync.spinning { animation: spin 0.8s linear infinite; color: var(--whatsapp); }
         .sync-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg); background: var(--text-muted); transition: background 0.2s; }
@@ -64,42 +63,38 @@
         .sync-dot.dot-nocreds { background: var(--text-muted); }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        #themeToggle { background: var(--badge-bg); border: none; border-radius: 50%; font-size: 1rem; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main); transition: transform 0.2s; }
+        #themeToggle { background: var(--badge-bg); border: none; border-radius: 50%; font-size: 1rem; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main); transition: transform 0.2s; }
         #themeToggle:active { transform: scale(0.9); }
 
         .panel { background: var(--panel); padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 20px; border: 0.5px solid var(--border-light); }
         .panel p { color: var(--text-muted); font-size: 0.8rem; font-weight: 500; margin-bottom: 12px; }
         
-        .input-group { display: flex; gap: 8px; }
-        input, select, button { padding: 10px 14px; border: 0.5px solid var(--border); border-radius: 10px; font-size: 0.85rem; outline: none; background: var(--badge-bg); color: var(--text-main); font-weight: 500; transition: border-color 0.2s; }
+        .input-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        input, select, button { padding: 10px 14px; min-height: 44px; border: 0.5px solid var(--border); border-radius: 12px; font-size: 0.9rem; outline: none; background: var(--badge-bg); color: var(--text-main); font-weight: 500; transition: border-color 0.2s; }
         input:focus, select:focus { border-color: var(--accent); background: var(--input-bg); }
-        .input-group input { flex-grow: 1; margin: 0; }
+        .input-group input { flex-grow: 1; min-width: 200px; margin: 0; }
         .input-group button { width: auto; margin: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; border: none; padding: 0 16px; }
         .input-group button:active { opacity: 0.8; }
         .input-group button:disabled { background: var(--text-muted); opacity: 0.5; cursor: not-allowed; }
         
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; max-width: 400px; padding: 0 15px; pointer-events: none; }
-        .toast { background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 0.5px solid rgba(255,255,255,0.1); color: #FFF; font-size: 0.85rem; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-12px); transition: opacity 0.3s, transform 0.3s; text-align: center; }
+        .toast { background: rgba(28, 28, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 0.5px solid rgba(255,255,255,0.1); color: #FFF; font-size: 0.85rem; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-12px); transition: opacity 0.3s, transform 0.3s; text-align: center; }
         .toast.show { opacity: 1; transform: translateY(0); }
-        body:not(.dark-mode) .toast { background: rgba(255, 255, 255, 0.9); color: #000; border: 0.5px solid rgba(0,0,0,0.1); }
+        body:not(.dark-mode) .toast { background: rgba(255, 255, 255, 0.95); color: #000; border: 0.5px solid rgba(0,0,0,0.1); }
         
         .filters-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; align-items: center; }
-        .filters-grid input { flex: 1 1 220px; }
-        .filters-grid select { flex: 0 1 auto; cursor: pointer; }
+        .filters-grid input { flex: 1 1 100%; }
+        .filters-grid select { flex: 1 1 calc(33% - 8px); cursor: pointer; }
         
-        /* Apple Style Action Buttons */
-        .btn-glass { border: none; font-weight: 600; font-size: 0.8rem; padding: 8px 14px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s; }
+        .btn-glass { border: none; font-weight: 600; font-size: 0.85rem; min-height: 44px; padding: 8px 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; flex: 1 1 auto; }
         .btn-glass:active { opacity: 0.7; }
         
         .btn-select-all { background: rgba(10, 132, 255, 0.12); color: var(--accent); }
         .btn-map { background: rgba(90, 200, 250, 0.12); color: var(--teal); }
         .btn-itinerary { background: rgba(48, 209, 88, 0.12); color: var(--whatsapp); }
-        .btn-sync { background: rgba(175, 82, 222, 0.12); color: var(--school); }
-        .btn-import-export { background: var(--badge-bg); color: var(--text-muted); }
 
-        .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
+        .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         
-        /* Ultra Premium Cards */
         .card { background: var(--panel); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); display: flex; flex-direction: column; border: 0.5px solid var(--border-light); overflow: hidden; position: relative; transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s; }
         .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
         
@@ -111,36 +106,34 @@
         .prop-address { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; cursor: pointer; transition: color 0.2s; }
         .prop-address:hover { color: var(--accent); }
         
-        .star-rating { display: flex; gap: 2px; font-size: 0.9rem; cursor: pointer; }
+        .star-rating { display: flex; gap: 2px; font-size: 1rem; cursor: pointer; }
         .star { color: var(--star-inactive); transition: color 0.15s; }
         .star.active { color: var(--warning); }
 
         .metrics-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-        .badge { background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+        .badge { background: var(--badge-bg); padding: 4px 8px; min-height: 28px; border-radius: 8px; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 4px; }
         .badge strong { color: var(--text-main); font-weight: 600; }
         
-        .badge.highlight { background: rgba(10, 132, 255, 0.06); color: var(--accent); width: 100%; justify-content: space-between; padding: 10px 12px; align-items: flex-start; border-radius: 10px; }
+        .badge.highlight { background: rgba(10, 132, 255, 0.06); color: var(--accent); width: 100%; justify-content: space-between; padding: 10px 12px; align-items: flex-start; border-radius: 12px; min-height: auto; }
         .badge.highlight span { font-weight: 600; font-size: 0.8rem; }
-        .badge.highlight strong { color: var(--accent); font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em; }
+        .badge.highlight strong { color: var(--accent); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
         .badge-usd-sub { display: block; font-size: 0.75rem; font-weight: 600; opacity: 0.8; margin-top: 1px;}
         
-        .badge-interactive { cursor: pointer; transition: opacity 0.2s; width: 100%; justify-content: space-between; padding: 6px 12px; background: var(--badge-bg); border-radius: 8px; }
+        .badge-interactive { cursor: pointer; transition: opacity 0.2s; width: 100%; justify-content: space-between; padding: 8px 12px; background: var(--badge-bg); border-radius: 10px; }
         .badge-interactive:active { opacity: 0.6; }
 
-        /* iOS Grouped List Style for Costs */
-        .entry-costs { margin-top: 4px; background: var(--badge-bg); border-radius: 10px; font-size: 0.75rem; color: var(--text-main); overflow: hidden; }
-        .entry-costs h4 { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; padding: 8px 12px; background: rgba(0,0,0,0.02); border-bottom: 0.5px solid var(--border-light); text-transform: uppercase; letter-spacing: 0.03em; }
+        .entry-costs { margin-top: 4px; background: var(--badge-bg); border-radius: 12px; font-size: 0.75rem; color: var(--text-main); overflow: hidden; }
+        .entry-costs h4 { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; padding: 10px 12px; background: rgba(0,0,0,0.02); border-bottom: 0.5px solid var(--border-light); text-transform: uppercase; letter-spacing: 0.03em; }
         body.dark-mode .entry-costs h4 { background: rgba(255,255,255,0.02); }
-        .cost-item { display: flex; justify-content: space-between; padding: 6px 12px; border-bottom: 0.5px solid var(--border-light); font-weight: 500; }
+        .cost-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 0.5px solid var(--border-light); font-weight: 500; }
         .cost-item:last-child { border-bottom: none; }
         .cost-item-total { font-weight: 700; color: var(--accent); background: rgba(10, 132, 255, 0.04); }
 
-        .itinerary-toggle { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 500; cursor: pointer; color: var(--text-main); }
-        .itinerary-toggle input { margin: 0; width: 16px; height: 16px; accent-color: var(--whatsapp); cursor: pointer; }
+        .itinerary-toggle { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--text-main); min-height: 44px; }
+        .itinerary-toggle input { margin: 0; width: 18px; height: 18px; accent-color: var(--whatsapp); cursor: pointer; }
 
-        /* Sleek Thin Buttons */
-        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; border-top: 0.5px solid var(--border-light); padding-top: 12px; }
-        .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 500; text-transform: none; letter-spacing: -0.01em; padding: 4px; height: 28px; border-radius: 8px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; border-top: 0.5px solid var(--border-light); padding-top: 12px; }
+        .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 36px; border-radius: 10px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
         .action-btn:active, .link-btn:active, .wa-btn:active, .school-btn:active { transform: scale(0.96); }
         
         .wa-btn { color: var(--whatsapp); border-color: rgba(48,209,88,0.3); background: rgba(48,209,88,0.06); }
@@ -149,20 +142,31 @@
         .edit-btn { color: var(--warning); border-color: rgba(255,159,10,0.3); background: rgba(255,159,10,0.06); }
         .delete-btn { color: var(--danger); border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); }
 
-        /* Modal iOS Sheet Style */
+        /* Settings Footer for Mobile */
+        .settings-footer { margin-top: 30px; padding-top: 20px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .backup-actions { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 500px; }
+        .btn-sync { background: rgba(175, 82, 222, 0.12); color: var(--school); width: 100%; max-width: 500px; }
+        .btn-import-export { background: var(--badge-bg); color: var(--text-muted); flex: 1; }
+
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: flex-end; padding: 0; }
         @media (min-width: 768px) { .modal-overlay { align-items: center; padding: 20px; } }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--panel); width: 100%; max-width: 1100px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .modal-content { background: var(--panel); width: 100%; max-width: 1100px; height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         @media (min-width: 768px) { .modal-content { border-radius: 16px; transform: translateY(20px); border: 0.5px solid var(--border); } }
         .modal-overlay.active .modal-content { transform: translateY(0); }
         
         .modal-header { padding: 16px 20px; border-bottom: 0.5px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
         .modal-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; }
-        .close-modal { background: var(--badge-bg); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; color: var(--text-muted); transition: background 0.2s; }
+        .close-modal { background: var(--badge-bg); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; color: var(--text-muted); transition: background 0.2s; }
         .close-modal:active { background: var(--border); }
-        #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); min-height: 60vh; }
+        #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); min-height: 50vh; }
 
+        @media (max-width: 600px) {
+            .input-group button { width: 100%; }
+            .filters-grid input { flex: 1 1 100%; }
+            .filters-grid select { flex: 1 1 100%; }
+            .filters-grid button { width: 100%; }
+        }
     </style>
 </head>
 <body class="dark-mode">
@@ -171,14 +175,13 @@
     <div class="container">
         <header>
             <h1>
-                Real Estate Extractor
+                Real Estate Sync
                 <div class="cloud-sync-wrap">
-                    <button class="btn-cloud-sync" id="btnCloudSync" onclick="manualSync()" title="Sincronizar con GitHub">🔄</button>
+                    <button class="btn-cloud-sync" id="btnCloudSync" onclick="manualSync()" title="Sincronizar">🔄</button>
                     <span class="sync-dot" id="syncDot"></span>
                 </div>
             </h1>
             <div class="header-actions">
-                <span class="status-badge" id="engineBadge">Web Engine</span>
                 <button id="themeToggle" title="Toggle Theme">🌓</button>
             </div>
         </header>
@@ -216,13 +219,18 @@
             <button class="btn-glass btn-select-all" onclick="selectAllItinerary()">☑️ Incluir Todos</button>
             <button class="btn-glass btn-map" onclick="openMapModal()">🗺️ Mapa</button>
             <button class="btn-glass btn-itinerary" onclick="generateItineraryMapsLink()">🚗 Ruta GPS (<span id="itineraryCount">0</span>)</button>
-            <button class="btn-glass btn-sync" onclick="forceSetupCredentials()">⚙️ Setup Sync</button>
-            <button class="btn-glass btn-import-export" onclick="exportJsonLocal()">⬇️ JSON</button>
-            <button class="btn-glass btn-import-export" onclick="document.getElementById('fileImport').click()">⬆️ JSON</button>
-            <input type="file" id="fileImport" accept=".json" style="display:none;" onchange="importJsonLocal(this)">
         </div>
 
         <div class="list-container" id="inventoryList"></div>
+
+        <div class="settings-footer">
+            <button class="btn-glass btn-sync" onclick="forceSetupCredentials()">⚙️ Configurar Nube (GitHub)</button>
+            <div class="backup-actions">
+                <button class="btn-glass btn-import-export" onclick="exportJsonLocal()">⬇️ Exportar JSON</button>
+                <button class="btn-glass btn-import-export" onclick="document.getElementById('fileImport').click()">⬆️ Importar JSON</button>
+            </div>
+            <input type="file" id="fileImport" accept=".json" style="display:none;" onchange="importJsonLocal(this)">
+        </div>
     </div>
 
     <!-- MAP MODAL -->
@@ -239,7 +247,6 @@
     <script>
         const bakedProperties = []; 
 
-        // --- TOAST SYSTEM ---
         function toast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
             if(!container) return;
@@ -254,7 +261,6 @@
             }, duration);
         }
 
-        // --- THEME ---
         const themeToggle = document.getElementById('themeToggle');
         if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark-mode');
         themeToggle.addEventListener('click', () => {
@@ -262,7 +268,6 @@
             localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
-        // --- STATE & VARS ---
         const btn = document.getElementById('extractBtn');
         const urlInput = document.getElementById('urlInput');
         const list = document.getElementById('inventoryList');
@@ -286,7 +291,6 @@
         let isSyncingLock = false;
         let isFreshInstall = !localStorage.getItem('re_global_state');
 
-        // --- INIT ---
         (async function initApp() {
             loadLocalDb();
             renderList();
@@ -312,7 +316,6 @@
             el.addEventListener('change', renderList);
         });
 
-        // --- LOCAL STORAGE ---
         function loadLocalDb() {
             const raw = localStorage.getItem('re_global_state');
             if (raw) {
@@ -333,7 +336,6 @@
             scheduleCloudPush();
         }
 
-        // --- I/O OFFLINE (JSON MIGRATOR) ---
         function exportJsonLocal() {
             const blob = new Blob([JSON.stringify(globalState.properties, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
@@ -360,16 +362,15 @@
                     }
                     saveLocalDb();
                     renderList();
-                    toast("Inventario importado. Tocá 🔄 para subir.", "success", 4000);
+                    toast("✅ Importado. Tocá 🔄 para subir.", "success");
                 } catch(err) {
-                    toast("Error al leer el archivo JSON.", "error");
+                    toast("❌ Error al leer el archivo JSON.", "error");
                 }
                 input.value = '';
             };
             reader.readAsText(file);
         }
 
-        // --- GITHUB GIST SYNC LOGIC ---
         function getSyncCredentials() {
             let token = localStorage.getItem('re_gh_token');
             let gistId = localStorage.getItem('re_gh_gist');
@@ -378,17 +379,17 @@
 
         async function forceSetupCredentials() {
             const current = getSyncCredentials();
-            const token = prompt("Pegá tu GitHub PAT (permiso 'gist'):", current.token || '');
+            const token = prompt("GitHub PAT (permiso 'gist'):", current.token || '');
             if (token === null) return;
-            const gistId = prompt("Pegá el ID del Gist:", current.gistId || '');
+            const gistId = prompt("ID del Gist:", current.gistId || '');
             if (gistId === null) return;
             if (!token.trim() || !gistId.trim()) {
-                toast("Faltan datos de configuración.", "error");
+                toast("Faltan datos.", "error");
                 return;
             }
             localStorage.setItem('re_gh_token', token.trim());
             localStorage.setItem('re_gh_gist', gistId.trim());
-            toast('Configuración guardada.', 'info');
+            toast('Credenciales guardadas.', 'info');
             await manualSync();
         }
 
@@ -400,7 +401,7 @@
                     hasUnsyncedChanges = false;
                     lastSyncHadError = false;
                 } else if(result.conflict) {
-                    toast('Versión más nueva en la nube. Actualizá 🔄.', 'warning');
+                    toast('Versión más nueva en la nube. Tocá 🔄.', 'warning');
                 } else if(!result.noCreds && !result.offline) {
                     lastSyncHadError = true;
                 }
@@ -413,11 +414,22 @@
             if(!dot) return;
             const creds = getSyncCredentials();
             dot.classList.remove('dot-synced', 'dot-pending', 'dot-error', 'dot-nocreds');
-            if(!creds.token || !creds.gistId) { dot.classList.add('dot-nocreds'); }
-            else if(!navigator.onLine) { dot.classList.add('dot-pending'); }
-            else if(lastSyncHadError) { dot.classList.add('dot-error'); }
-            else if(hasUnsyncedChanges) { dot.classList.add('dot-pending'); }
-            else { dot.classList.add('dot-synced'); }
+            if(!creds.token || !creds.gistId) {
+                dot.classList.add('dot-nocreds');
+                dot.title = 'Sin credenciales';
+            } else if(!navigator.onLine) {
+                dot.classList.add('dot-pending');
+                dot.title = 'Offline';
+            } else if(lastSyncHadError) {
+                dot.classList.add('dot-error');
+                dot.title = 'Error en sincronización';
+            } else if(hasUnsyncedChanges) {
+                dot.classList.add('dot-pending');
+                dot.title = 'Cambios pendientes';
+            } else {
+                dot.classList.add('dot-synced');
+                dot.title = 'Sincronizado';
+            }
         }
 
         async function autoPullFromCloud(isForcedManual = false) {
@@ -522,7 +534,7 @@
             const pullResult = await autoPullFromCloud(true);
             if(!pullResult.ok) {
                 lastSyncHadError = true; updateSyncStatus();
-                toast(`Fallo en la sincronización.`, 'error');
+                toast(`Error al descargar.`, 'error');
                 return;
             }
             if(pullResult.adopted) {
@@ -533,22 +545,21 @@
             const pushResult = await autoPushToCloud(true, true);
             if(!pushResult.ok) {
                 lastSyncHadError = true; updateSyncStatus();
-                toast(`Error al subir a la nube.`, 'error');
+                toast(`Error al subir.`, 'error');
                 return;
             }
             hasUnsyncedChanges = false;
             lastSyncHadError = false;
             updateSyncStatus();
-            toast('Sincronizado correctamente.', 'success');
+            toast('Sincronizado.', 'success');
         }
 
-        // --- SCRAPER ---
         btn.addEventListener('click', async () => {
             const url = urlInput.value.trim();
             if (!url) return toast("URL inválida.", "warning");
 
             btn.disabled = true;
-            btn.textContent = "Cargando...";
+            btn.textContent = "Procesando...";
 
             try {
                 const htmlText = await fetchPropertyHtml(url);
@@ -579,7 +590,7 @@
                     }
                 } catch(e) {}
             }
-            throw new Error("Restricción CORS. Imposible extraer.");
+            throw new Error("Proxy bloqueado por CORS.");
         }
 
         function extractPropertyData(text, url) {
@@ -643,7 +654,6 @@
             return { id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras, metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0, latitude, longitude, imagen, url };
         }
 
-        // --- CRUD ACTIONS ---
         window.deleteProperty = function(id) {
             if(!confirm("¿Remover esta propiedad?")) return;
             globalState.properties = globalState.properties.filter(p => p.id !== id);
@@ -657,11 +667,11 @@
             const prop = globalState.properties.find(p => p.id === id);
             if(!prop) return;
 
-            const newDireccion = prompt("Actualizar Dirección:", prop.direccion || "");
+            const newDireccion = prompt("Dirección:", prop.direccion || "");
             if (newDireccion === null) return;
-            const newPrecio = prompt("Actualizar Precio:", prop.precio || "");
+            const newPrecio = prompt("Precio:", prop.precio || "");
             if (newPrecio === null) return; 
-            const newExpensas = prompt("Actualizar Expensas:", prop.expensas || "");
+            const newExpensas = prompt("Expensas:", prop.expensas || "");
             if (newExpensas === null) return;
 
             if (newDireccion.trim() !== (prop.direccion || "").trim()) {
@@ -683,9 +693,9 @@
 
         window.updateSchoolData = function(id) {
             const prop = globalState.properties.find(p => p.id === id);
-            const dist = prompt("Ingresa distancia al colegio (ej: 2.5 km):", prop.distancia_cole || "");
+            const dist = prompt("Distancia al colegio (ej: 2.5 km):", prop.distancia_cole || "");
             if (dist === null) return; 
-            const time = prompt("Ingresa tiempo estimado (ej: 15 min):", prop.tiempo_cole || "");
+            const time = prompt("Tiempo (ej: 15 min):", prop.tiempo_cole || "");
             if (time === null) return;
 
             prop.distancia_cole = dist; prop.tiempo_cole = time;
@@ -715,7 +725,6 @@
             document.getElementById('itineraryCount').innerText = itineraryIds.size;
         }
 
-        // --- MAP LOGIC ---
         function openAddressInGoogleMaps(address) {
             let a = address;
             if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
@@ -767,14 +776,14 @@
         }
 
         function addPropertyMarker(p, lat, lon, isApprox = false) {
-            const approxTag = isApprox ? '<div style="font-size:10px;color:var(--warning);font-weight:600;">⚠️ Ubicación aprox.</div>' : '';
+            const approxTag = isApprox ? '<div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:2px;">⚠️ Ubicación aprox.</div>' : '';
             const popupContent = `
                 <div style="color:#000; font-family:-apple-system, BlinkMacSystemFont, sans-serif; max-width:200px;">
                     ${p.imagen ? `<img src="${p.imagen}" style="width:100%;height:100px;object-fit:cover;border-radius:10px;margin-bottom:8px;">` : ''}
                     <strong style="font-size:13px;display:block;">${p.tipo} - ${p.precio}</strong>
-                    <div style="font-size:11px;color:#666;margin-bottom:6px;line-height:1.2;">📍 ${p.direccion}</div>
+                    <div style="font-size:11px;color:#666;margin-bottom:2px;line-height:1.2;">📍 ${p.direccion}</div>
                     ${approxTag}
-                    <a href="${generateMapsLink(p)}" target="_blank" style="display:inline-block;margin-top:6px;background:var(--accent);color:white;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS</a>
+                    <a href="${generateMapsLink(p)}" target="_blank" style="display:inline-block;margin-top:8px;background:var(--accent);color:white;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS</a>
                 </div>
             `;
             L.marker([lat, lon]).addTo(markersGroup).bindPopup(popupContent);
