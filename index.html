@@ -102,6 +102,9 @@
         
         .btn-sync { background: #6366f1; color: white; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .btn-sync:hover { background: #4f46e5; }
+        
+        .btn-import-export { background: #475569; color: white; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-import-export:hover { background: #334155; }
 
         .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
         
@@ -160,7 +163,7 @@
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--panel); border-radius: 12px; width: 100%; max-width: 1100px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
+        .modal-content { background: var(--panel); border-radius: 12px; width: 100%; max-width: 1100px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
         .modal-header { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
         .modal-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
         .close-modal { background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main); line-height: 1; padding: 0 4px; }
@@ -233,6 +236,13 @@
             <button class="btn-sync" onclick="forceSetupCredentials()">
                 ⚙️ Configurar Nube (GitHub)
             </button>
+            <button class="btn-import-export" onclick="exportJsonLocal()">
+                ⬇️ Exportar JSON
+            </button>
+            <button class="btn-import-export" onclick="document.getElementById('fileImport').click()">
+                ⬆️ Importar JSON
+            </button>
+            <input type="file" id="fileImport" accept=".json" style="display:none;" onchange="importJsonLocal(this)">
         </div>
 
         <div class="list-container" id="inventoryList"></div>
@@ -250,6 +260,8 @@
     </div>
 
     <script>
+        const bakedProperties = []; 
+
         // --- TOAST SYSTEM ---
         function toast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
@@ -332,7 +344,9 @@
                 try { 
                     globalState = JSON.parse(raw); 
                     if (!globalState.properties) globalState.properties = [];
-                } catch(e) { globalState = { updatedAt: 0, properties: [] }; }
+                } catch(e) { globalState = { updatedAt: Date.now(), properties: bakedProperties || [] }; }
+            } else {
+                globalState = { updatedAt: Date.now(), properties: bakedProperties || [] };
             }
         }
 
@@ -342,6 +356,42 @@
             hasUnsyncedChanges = true;
             updateSyncStatus();
             scheduleCloudPush();
+        }
+
+        // --- I/O OFFLINE (JSON MIGRATOR) ---
+        function exportJsonLocal() {
+            const blob = new Blob([JSON.stringify(globalState.properties, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `propiedades_backup.json`;
+            a.click();
+        }
+
+        function importJsonLocal(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed)) {
+                        globalState.properties = parsed;
+                        globalState.updatedAt = Date.now();
+                    } else if (parsed.properties && Array.isArray(parsed.properties)) {
+                        globalState = parsed;
+                        if (!globalState.updatedAt) globalState.updatedAt = Date.now();
+                    } else {
+                        throw new Error("Formato inválido");
+                    }
+                    saveLocalDb();
+                    renderList();
+                    toast("✅ Inventario importado. Tocá 🔄 para subirlo a la nube.", "success", 5000);
+                } catch(err) {
+                    toast("❌ Error al leer el archivo JSON.", "error");
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
         }
 
         // --- GITHUB GIST SYNC LOGIC ---
@@ -888,7 +938,7 @@
             const s = filterText.value.toLowerCase(), t = filterType.value, c = filterCurrency.value;
             return globalState.properties.filter(p => {
                 const matchTxt = (p.direccion || "").toLowerCase().includes(s) || (p.tipo || "").toLowerCase().includes(s);
-                const matchType = t === "ALL" || (p.tipo || "").includes(typeTerm);
+                const matchType = t === "ALL" || (p.tipo || "").includes(t);
                 const isUsd = (p.precio || "").toUpperCase().includes("US");
                 const matchCurr = c === "ALL" ? true : (c === "USD" ? isUsd : !isUsd);
                 return matchTxt && matchType && matchCurr;
