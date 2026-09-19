@@ -725,7 +725,7 @@
         }
 
         function openAddressInGoogleMaps(address) {
-            let a = address;
+            let a = address.replace(/\b[a-zA-Z]\d{4}[a-zA-Z]{0,3}\b/g, '').replace(/\s+/g, ' ').trim();
             if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}`, '_blank');
         }
@@ -774,12 +774,13 @@
             return { lat: -34.5085 + (Math.random() - 0.5) * 0.015, lon: -58.4988 + (Math.random() - 0.5) * 0.015, approx: true };
         }
 
-        function generateGpsToPropertyLink(p, lat, lon) {
+        function generateGpsLink(p) {
             let dest = p.direccion || "";
-            if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
-                dest = `${lat},${lon}`;
+            dest = dest.replace(/\b[a-zA-Z]\d{4}[a-zA-Z]{0,3}\b/g, '').replace(/\s+/g, ' ').trim();
+            if (dest === "Dirección no especificada" || dest === "") {
+                if (p.latitude && p.longitude) dest = `${p.latitude},${p.longitude}`;
             } else {
-                if (!dest.toLowerCase().includes("buenos aires") && !dest.toLowerCase().includes("capital")) {
+                if(!dest.toLowerCase().includes("buenos aires") && !dest.toLowerCase().includes("capital")) {
                     dest += ", Buenos Aires, Argentina";
                 }
             }
@@ -788,7 +789,7 @@
 
         function addPropertyMarker(p, lat, lon, isApprox = false) {
             const approxTag = isApprox ? '<div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:2px;">⚠️ Ubicación aprox.</div>' : '';
-            const gpsUrl = generateGpsToPropertyLink(p, lat, lon);
+            const gpsUrl = generateGpsLink(p);
             const popupContent = `
                 <div style="color:#000; font-family:-apple-system, BlinkMacSystemFont, sans-serif; max-width:200px;">
                     ${p.imagen ? `<img src="${p.imagen}" style="width:100%;height:100px;object-fit:cover;border-radius:10px;margin-bottom:8px;">` : ''}
@@ -847,6 +848,7 @@
             const selectedProps = globalState.properties.filter(p => itineraryIds.has(p.id));
             const addrs = selectedProps.map(p => {
                 let a = p.direccion || "";
+                a = a.replace(/\b[a-zA-Z]\d{4}[a-zA-Z]{0,3}\b/g, '').replace(/\s+/g, ' ').trim();
                 if(!a.toLowerCase().includes("buenos aires") && !a.toLowerCase().includes("capital")) a += ", Buenos Aires, Argentina";
                 return a;
             });
@@ -861,10 +863,6 @@
 
         function generateWaLink(p) {
             return `https://wa.me/?text=${encodeURIComponent(`Mirá este ${p.tipo} en${p.direccion}.\nValor: ${p.precio}\nLink:${p.url}`)}`;
-        }
-
-        function generateMapsLink(p) {
-            return generateGpsToPropertyLink(p, parseFloat(p.latitude), parseFloat(p.longitude));
         }
 
         function parseNumericVal(str) { return parseInt(String(str).replace(/[^0-9]/g, ''), 10) || 0; }
@@ -988,7 +986,7 @@
                         
                         <div class="card-actions">
                             <a href="${generateWaLink(p)}" target="_blank" class="wa-btn">WA</a>
-                            <a href="${generateMapsLink(p)}" target="_blank" class="school-btn">GPS</a>
+                            <a href="${generateGpsLink(p)}" target="_blank" class="school-btn">GPS</a>
                             <a href="${p.url}" target="_blank" class="link-btn">Ver</a>
                             <button onclick="editProperty('${p.id}')" class="action-btn edit-btn">Editar</button>
                             <button onclick="deleteProperty('${p.id}')" class="action-btn delete-btn">Borrar</button>
