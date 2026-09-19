@@ -888,7 +888,7 @@
             const s = filterText.value.toLowerCase(), t = filterType.value, c = filterCurrency.value;
             return globalState.properties.filter(p => {
                 const matchTxt = (p.direccion || "").toLowerCase().includes(s) || (p.tipo || "").toLowerCase().includes(s);
-                const matchType = t === "ALL" || (p.tipo || "").includes(t);
+                const matchType = t === "ALL" || (p.tipo || "").includes(typeTerm);
                 const isUsd = (p.precio || "").toUpperCase().includes("US");
                 const matchCurr = c === "ALL" ? true : (c === "USD" ? isUsd : !isUsd);
                 return matchTxt && matchType && matchCurr;
