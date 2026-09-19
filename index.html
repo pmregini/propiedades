@@ -739,14 +739,40 @@
         function sanitizeAddressForGeocoding(addr, level = 0) {
             if (!addr || addr === "Dirección no especificada") return "";
             let clean = addr;
+
+            clean = clean.replace(/\b[a-zA-Z]\d{4}[a-zA-Z]{0,3}\b/g, '');
+            clean = clean.replace(/\bC\.\s*/gi, 'Calle ');
+            clean = clean.replace(/\bC\/\s*/gi, 'Calle ');
+            clean = clean.replace(/\bCdad\.\s*/gi, 'Ciudad ');
+            clean = clean.replace(/\b(gral|av|dr|pje)\b\.?/gi, m => {
+                const l = m.toLowerCase();
+                if (l.startsWith('g')) return 'General';
+                if (l.startsWith('a')) return 'Avenida';
+                if (l.startsWith('d')) return 'Doctor';
+                if (l.startsWith('p')) return 'Pasaje';
+                return m;
+            });
+
             if (level === 0) {
-                clean = clean.replace(/\s+al\s+(\d+)/gi, ' $1').replace(/\b(gral|av|dr)\b\.?/gi, m => m.toLowerCase().startsWith('g') ? 'General' : m.toLowerCase().startsWith('a') ? 'Avenida' : 'Doctor').replace(/\d+°\s*[a-zA-Z]?/gi, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
+                clean = clean.replace(/\s+al\s+(\d+)/gi, ' $1');
+                clean = clean.replace(/\d+°\s*[a-zA-Z]?/gi, '');
+                clean = clean.replace(/piso\s*\d+/gi, '');
+                clean = clean.replace(/depto\s*[a-zA-Z0-9]+/gi, '');
+                clean = clean.replace(/\s+/g, ' ').trim();
             } else if (level === 1) {
-                clean = clean.replace(/\s+al\s+\d+/gi, '').replace(/\s+\d+/g, '').replace(/piso\s*\d+/gi, '').replace(/depto\s*[a-zA-Z0-9]+/gi, '').replace(/\s+/g, ' ').trim();
+                clean = clean.replace(/\s+al\s+\d+/gi, '');
+                clean = clean.replace(/\s+\d+/g, '');
+                clean = clean.replace(/piso\s*\d+/gi, '');
+                clean = clean.replace(/depto\s*[a-zA-Z0-9]+/gi, '');
+                clean = clean.replace(/\s+/g, ' ').trim();
             } else {
-                const parts = clean.split(','); clean = parts.length > 1 ? parts[parts.length - 1].trim() : clean;
+                const parts = clean.split(','); 
+                clean = parts.length > 1 ? parts[parts.length - 1].trim() : clean;
             }
-            if (!clean.toLowerCase().includes("buenos aires") && !clean.toLowerCase().includes("capital")) clean += ", Buenos Aires, Argentina";
+
+            if (!clean.toLowerCase().includes("buenos aires") && !clean.toLowerCase().includes("capital")) {
+                clean += ", Buenos Aires, Argentina";
+            }
             return clean;
         }
 
@@ -771,7 +797,11 @@
             await new Promise(r => setTimeout(r, 400));
             coords = await geocodeQuery(sanitizeAddressForGeocoding(p.direccion, 2));
             if (coords) return { lat: coords.lat + (Math.random() - 0.5) * 0.008, lon: coords.lon + (Math.random() - 0.5) * 0.008, approx: true };
-            return { lat: -34.5085 + (Math.random() - 0.5) * 0.015, lon: -58.4988 + (Math.random() - 0.5) * 0.015, approx: true };
+            
+            const isCaba = isCabaAddress(p.direccion);
+            const baseLat = isCaba ? -34.5800 : -34.5085;
+            const baseLon = isCaba ? -58.4700 : -58.4988;
+            return { lat: baseLat + (Math.random() - 0.5) * 0.015, lon: baseLon + (Math.random() - 0.5) * 0.015, approx: true };
         }
 
         function generateGpsLink(p) {
