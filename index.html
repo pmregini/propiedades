@@ -47,7 +47,7 @@
         .container { max-width: 1400px; margin: 0 auto; }
         
         header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); padding-bottom: 14px; }
-        h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+        h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
         .header-actions { display: flex; gap: 12px; align-items: center; }
         .status-badge { background: transparent; color: var(--text-muted); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; border: 0.5px solid var(--border); transition: all 0.3s; }
@@ -89,9 +89,7 @@
         .btn-glass { border: none; font-weight: 600; font-size: 0.85rem; min-height: 44px; padding: 8px 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; flex: 1 1 auto; }
         .btn-glass:active { opacity: 0.7; }
         
-        .btn-select-all { background: rgba(10, 132, 255, 0.12); color: var(--accent); }
         .btn-map { background: rgba(90, 200, 250, 0.12); color: var(--teal); }
-        .btn-itinerary { background: rgba(48, 209, 88, 0.12); color: var(--whatsapp); }
 
         .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         
@@ -128,9 +126,6 @@
         .cost-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 0.5px solid var(--border-light); font-weight: 500; }
         .cost-item:last-child { border-bottom: none; }
         .cost-item-total { font-weight: 700; color: var(--accent); background: rgba(10, 132, 255, 0.04); }
-
-        .itinerary-toggle { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--text-main); min-height: 44px; }
-        .itinerary-toggle input { margin: 0; width: 18px; height: 18px; accent-color: var(--whatsapp); cursor: pointer; }
 
         .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; border-top: 0.5px solid var(--border-light); padding-top: 12px; }
         .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 36px; border-radius: 10px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
@@ -175,7 +170,7 @@
         <header>
             <h1>
                 Real Estate Sync
-                <span id="topTotalCount" style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal; margin-left: 8px;"></span>
+                <span id="topTotalCount" style="font-size: 1rem; color: var(--accent); font-weight: 600; margin-left: 8px;"></span>
                 <div class="cloud-sync-wrap" style="margin-left: 6px;">
                     <button class="btn-cloud-sync" id="btnCloudSync" onclick="manualSync()" title="Sincronizar">🔄</button>
                     <span class="sync-dot" id="syncDot"></span>
@@ -276,7 +271,6 @@
         const sortType = document.getElementById('sortType');
 
         let globalState = { updatedAt: 0, properties: [] };
-        let itineraryIds = new Set();
         let dolarBlueRate = 1300; 
 
         let mapInstance = null;
@@ -655,7 +649,6 @@
         window.deleteProperty = function(id) {
             if(!confirm("¿Remover esta propiedad?")) return;
             globalState.properties = globalState.properties.filter(p => p.id !== id);
-            itineraryIds.delete(id);
             saveLocalDb();
             renderList();
         };
@@ -670,7 +663,7 @@
             if (newPrecio === null) return; 
             const newExpensas = prompt("Expensas:", prop.expensas || "");
             if (newExpensas === null) return;
-
+            
             const newCoords = prompt("Coordenadas GPS (lat,lon) o dejá en blanco para auto-buscar:", (prop.latitude && prop.longitude) ? `${prop.latitude}, ${prop.longitude}` : "");
 
             if (newDireccion.trim() !== (prop.direccion || "").trim()) {
@@ -846,7 +839,7 @@
                     <div style="font-size:11px;color:#666;margin-bottom:2px;line-height:1.2;">📍 ${p.direccion}</div>
                     ${approxTag}
                     <div style="display:flex; gap:6px; margin-top:8px;">
-                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Abrir GPS</a>
+                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS →</a>
                         <button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>
                     </div>
                 </div>
@@ -873,7 +866,7 @@
 
             const targetProps = globalState.properties;
             
-            document.getElementById('mapPinCount').innerText = `(${targetProps.length} pines)`;
+            document.getElementById('mapPinCount').innerText = `(${targetProps.length} pines en pantalla)`;
 
             for (const p of targetProps) {
                 if (p.latitude && p.longitude && !isNaN(parseFloat(p.latitude))) addPropertyMarker(p, parseFloat(p.latitude), parseFloat(p.longitude), false);
@@ -970,7 +963,7 @@
             let processedProps = getFilteredProperties();
             
             const totalSpan = document.getElementById('topTotalCount');
-            if(totalSpan) totalSpan.innerText = `(${globalState.properties.length} prop.)`;
+            if(totalSpan) totalSpan.innerText = `[ ${globalState.properties.length} propiedades en total ]`;
 
             if (sortTerm !== 'date_desc') {
                 processedProps.sort((a, b) => {
