@@ -96,15 +96,18 @@
         .card { background: var(--panel); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); display: flex; flex-direction: column; border: 0.5px solid var(--border-light); overflow: hidden; position: relative; transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s; }
         .card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
         
-        .card-img { width: 100%; height: 160px; object-fit: cover; background: var(--badge-bg); border-bottom: 0.5px solid var(--border-light); }
+        .card-img-wrap { display: block; overflow: hidden; position: relative; cursor: pointer; text-decoration: none; }
+        .card-img { width: 100%; height: 160px; object-fit: cover; background: var(--badge-bg); border-bottom: 0.5px solid var(--border-light); transition: transform 0.3s ease; }
+        .card-img-wrap:hover .card-img { transform: scale(1.05); }
+
         .card-content { padding: 14px 16px; display: flex; flex-direction: column; flex-grow: 1; }
         
-        .card-header { margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .card-header { margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
         .prop-title { font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px; letter-spacing: 0.01em; text-transform: capitalize; }
-        .prop-address { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; cursor: pointer; transition: color 0.2s; }
+        .prop-address { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: color 0.2s; }
         .prop-address:hover { color: var(--accent); }
         
-        .star-rating { display: flex; gap: 2px; font-size: 1rem; cursor: pointer; }
+        .star-rating { display: flex; gap: 2px; font-size: 0.9rem; cursor: pointer; }
         .star { color: var(--star-inactive); transition: color 0.15s; }
         .star.active { color: var(--warning); }
         .star.active-zona { color: var(--teal); }
@@ -114,27 +117,26 @@
         .badge strong { color: var(--text-main); font-weight: 600; }
         
         .badge.highlight { background: rgba(10, 132, 255, 0.06); color: var(--accent); width: 100%; justify-content: space-between; padding: 10px 12px; align-items: flex-start; border-radius: 12px; min-height: auto; }
-        .badge.highlight span { font-weight: 600; font-size: 0.8rem; }
-        .badge.highlight strong { color: var(--accent); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
-        .badge-usd-sub { display: block; font-size: 0.75rem; font-weight: 600; opacity: 0.8; margin-top: 1px;}
+        .badge.highlight span { font-weight: 600; font-size: 0.75rem; }
+        .badge.highlight strong { color: var(--accent); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+        .badge-usd-sub { display: block; font-size: 0.7rem; font-weight: 600; opacity: 0.8; margin-top: 1px;}
         
         .badge-interactive { cursor: pointer; transition: opacity 0.2s; width: 100%; justify-content: space-between; padding: 8px 12px; background: var(--badge-bg); border-radius: 10px; }
         .badge-interactive:active { opacity: 0.6; }
 
         .entry-costs { margin-top: 4px; background: var(--badge-bg); border-radius: 12px; font-size: 0.75rem; color: var(--text-main); overflow: hidden; }
-        .entry-costs h4 { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; padding: 10px 12px; background: rgba(0,0,0,0.02); border-bottom: 0.5px solid var(--border-light); text-transform: uppercase; letter-spacing: 0.03em; }
+        .entry-costs h4 { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; padding: 8px 12px; background: rgba(0,0,0,0.02); border-bottom: 0.5px solid var(--border-light); text-transform: uppercase; letter-spacing: 0.03em; }
         body.dark-mode .entry-costs h4 { background: rgba(255,255,255,0.02); }
         .cost-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 0.5px solid var(--border-light); font-weight: 500; }
         .cost-item:last-child { border-bottom: none; }
         .cost-item-total { font-weight: 700; color: var(--accent); background: rgba(10, 132, 255, 0.04); }
 
-        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; border-top: 0.5px solid var(--border-light); padding-top: 12px; }
-        .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.75rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 36px; border-radius: 10px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; border-top: 0.5px solid var(--border-light); padding-top: 10px; }
+        .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.7rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 32px; border-radius: 8px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
         .action-btn:active, .link-btn:active, .wa-btn:active, .school-btn:active { transform: scale(0.96); }
         
         .wa-btn { color: var(--whatsapp); border-color: rgba(48,209,88,0.3); background: rgba(48,209,88,0.06); }
         .school-btn { color: var(--school); border-color: rgba(191,90,242,0.3); background: rgba(191,90,242,0.06); }
-        .link-btn { color: var(--text-main); border-color: var(--border); background: var(--badge-bg); }
         .edit-btn { color: var(--warning); border-color: rgba(255,159,10,0.3); background: rgba(255,159,10,0.06); }
         .delete-btn { color: var(--danger); border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); }
 
@@ -849,7 +851,7 @@
                     <div style="font-size:11px;color:#666;margin-bottom:2px;line-height:1.2;">📍 ${p.direccion}</div>
                     ${approxTag}
                     <div style="display:flex; gap:6px; margin-top:8px;">
-                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Ruta GPS →</a>
+                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Abrir GPS</a>
                         <button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>
                     </div>
                 </div>
@@ -1004,20 +1006,22 @@
 
                 return `
                 <div class="card">
-                    ${p.imagen ? `<img src="${p.imagen}" class="card-img" alt="Preview">` : `<div class="card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;font-weight:600;">SIN IMAGEN</div>`}
+                    <a href="${p.url}" target="_blank" class="card-img-wrap" title="Abrir publicación">
+                        ${p.imagen ? `<img src="${p.imagen}" class="card-img" alt="Preview">` : `<div class="card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;font-weight:600;">SIN IMAGEN</div>`}
+                    </a>
                     <div class="card-content">
                         <div class="card-header">
-                            <div style="min-width:0; flex:1;">
+                            <div style="min-width:0; flex:1 1 auto;">
                                 <div class="prop-title">${p.tipo}</div>
                                 <div class="prop-address" onclick="openAddressInGoogleMaps('${escapedAddress}')">📍 ${p.direccion}</div>
                             </div>
-                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0;">
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <span style="font-size:0.65rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">Prop</span>
+                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex: 0 0 auto;">
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:0.6rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">Prop</span>
                                     <div class="star-rating">${stars}</div>
                                 </div>
-                                <div style="display:flex; align-items:center; gap:6px;">
-                                    <span style="font-size:0.65rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">Zona</span>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:0.6rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">Zona</span>
                                     <div class="star-rating">${zonaStars}</div>
                                 </div>
                             </div>
@@ -1032,7 +1036,7 @@
                                 </div>
                             </div>
                             <div class="badge badge-interactive" onclick="updateSchoolData('${p.id}')">
-                                <span>Ruta Escolar</span> <strong>${schoolData}</strong>
+                                <span>Distancia al Colegio</span> <strong>${schoolData}</strong>
                             </div>
                             ${mk("Totales", p.metros_tot ? p.metros_tot + ' m²' : null)}
                             ${mk("Amb", p.ambientes)}
@@ -1045,7 +1049,6 @@
                         <div class="card-actions">
                             <a href="${generateWaLink(p)}" target="_blank" class="wa-btn">WA</a>
                             <a href="${generateGpsLink(p, p.latitude, p.longitude)}" target="_blank" class="school-btn">GPS</a>
-                            <a href="${p.url}" target="_blank" class="link-btn">Ver</a>
                             <button onclick="editProperty('${p.id}')" class="action-btn edit-btn">Editar</button>
                             <button onclick="deleteProperty('${p.id}')" class="action-btn delete-btn">Borrar</button>
                         </div>
