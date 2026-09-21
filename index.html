@@ -280,7 +280,7 @@
                     <textarea id="vNotes" rows="3" placeholder="Ej: Preguntar por expensas reales, estado de cañerías..."></textarea>
                 </div>
                 <div style="display: flex; gap: 8px; margin-top: 8px;">
-                    <button class="btn-glass" style="background: var(--badge-bg); color: var(--text-main); flex: 1;" onclick="clearVisit()">Limpiar Visita</button>
+                    <button class="btn-glass" style="background: var(--badge-bg); color: var(--text-main); flex: 1;" onclick="clearVisit()">Limpiar</button>
                     <button class="btn-glass" style="background: var(--accent); color: white; flex: 2;" onclick="saveVisit()">Guardar Cambios</button>
                 </div>
             </div>
@@ -618,8 +618,15 @@
                 saveLocalDb();
                 renderList();
                 urlInput.value = '';
+                toast("Propiedad extraída.", "success");
             } catch (err) {
-                toast(err.message, "error");
+                const blankData = extractPropertyData("", url);
+                blankData.direccion = "Extracción manual (CORS bloqueó el acceso)";
+                globalState.properties.unshift(blankData);
+                saveLocalDb();
+                renderList();
+                urlInput.value = '';
+                toast("Se agregó una ficha manual por bloqueo del portal.", "warning");
             } finally {
                 btn.disabled = false;
                 btn.textContent = "Extraer";
@@ -629,24 +636,30 @@
         async function fetchPropertyHtml(targetUrl) {
             const proxies = [
                 u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-                u => `https://corsproxy.io/?${encodeURIComponent(u)}`
+                u => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
+                u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+                u => `https://thingproxy.freeboard.io/fetch/${u}`
             ];
             for (let proxyFn of proxies) {
                 try {
-                    const res = await fetch(proxyFn(targetUrl));
+                    const res = await fetch(proxyFn(targetUrl), { cache: "no-store", headers: { "Accept": "text/html" } });
                     if (res.ok) {
                         const text = await res.text();
                         if (text && text.length > 500) return text;
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.warn("Proxy falló:", proxyFn(targetUrl));
+                }
             }
-            throw new Error("Proxy bloqueado por CORS.");
+            throw new Error("Bloqueo de CORS.");
         }
 
         function extractPropertyData(text, url) {
             const id = 'id_' + Math.random().toString(36).substr(2, 9);
-            let tipo = "Inmueble", direccion = "Dirección no especificada", precio = "Consultar", expensas = "";
+            let tipo = "Inmueble", direccion = "Dirección a completar", precio = "Consultar", expensas = "";
             let ambientes = "", dormitorios = "", banos = "", cocheras = "", metros_tot = "", metros_cub = "", latitude = "", longitude = "", imagen = "";
+
+            if (!text) return { id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras, metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0, zona_ranking: 0, latitude, longitude, imagen, url, status: 'active', visit_date: '', visit_time: '', visit_notes: '' };
 
             const urlLower = url.toLowerCase();
 
