@@ -50,7 +50,6 @@
         h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
         .header-actions { display: flex; gap: 12px; align-items: center; }
-        .status-badge { background: transparent; color: var(--text-muted); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; border: 0.5px solid var(--border); transition: all 0.3s; }
         
         .cloud-sync-wrap { position: relative; display: flex; align-items: center; gap: 4px; }
         .btn-cloud-sync { background: var(--badge-bg); border: none; color: var(--text-main); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: transform 0.2s; }
@@ -139,16 +138,17 @@
         .visit-card-date { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
         .visit-card-notes { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 4px; line-height: 1.3; }
 
-        .card-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; border-top: 0.5px solid var(--border-light); padding-top: 10px; }
-        .action-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.7rem; font-weight: 600; padding: 4px; min-height: 32px; border-radius: 8px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
+        .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; border-top: 0.5px solid var(--border-light); padding-top: 10px; }
+        .action-btn { flex: 1 1 calc(33.333% - 6px); display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.7rem; font-weight: 600; padding: 4px; min-height: 32px; border-radius: 8px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; transition: all 0.2s; }
         .action-btn:active { transform: scale(0.96); }
         
         .wa-btn { color: var(--whatsapp); border-color: rgba(48,209,88,0.3); background: rgba(48,209,88,0.06); }
         .school-btn { color: var(--school); border-color: rgba(191,90,242,0.3); background: rgba(191,90,242,0.06); }
         .agendar-btn { color: var(--accent); border-color: rgba(0,122,255,0.3); background: rgba(0,122,255,0.06); }
+        .foto-btn { color: var(--accent); border-color: rgba(0,122,255,0.3); background: transparent; border-style: dashed; }
         .archive-btn { color: var(--text-main); border-color: var(--border); background: var(--badge-bg); }
         .edit-btn { color: var(--warning); border-color: rgba(255,159,10,0.3); background: rgba(255,159,10,0.06); }
-        .delete-btn { color: var(--danger); border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); }
+        .delete-btn { color: var(--danger); border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); flex-basis: 100%; }
 
         .settings-footer { margin-top: 30px; padding-top: 20px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .backup-actions { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 500px; }
@@ -243,6 +243,7 @@
                 <button class="btn-glass btn-import-export" onclick="document.getElementById('fileImport').click()">⬆️ Importar JSON</button>
             </div>
             <input type="file" id="fileImport" accept=".json" style="display:none;" onchange="importJsonLocal(this)">
+            <input type="file" id="imageUploadInput" accept="image/*" style="display:none;">
         </div>
     </div>
 
@@ -288,8 +289,6 @@
     </div>
 
     <script>
-        const bakedProperties = []; 
-
         function toast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
             if(!container) return;
@@ -323,7 +322,6 @@
         let globalState = { updatedAt: 0, properties: [] };
         let currentTab = 'active'; 
         let dolarBlueRate = 1300; 
-
         let mapInstance = null;
         let markersGroup = null;
 
@@ -333,6 +331,7 @@
         let lastSyncHadError = false;
         let isSyncingLock = false;
         let isFreshInstall = !localStorage.getItem('re_global_state');
+        let currentImageUploadId = null;
 
         (async function initApp() {
             loadLocalDb();
@@ -372,9 +371,9 @@
                 try { 
                     globalState = JSON.parse(raw); 
                     if (!globalState.properties) globalState.properties = [];
-                } catch(e) { globalState = { updatedAt: Date.now(), properties: bakedProperties || [] }; }
+                } catch(e) { globalState = { updatedAt: Date.now(), properties: [] }; }
             } else {
-                globalState = { updatedAt: Date.now(), properties: bakedProperties || [] };
+                globalState = { updatedAt: Date.now(), properties: [] };
             }
         }
 
@@ -401,25 +400,80 @@
             reader.onload = e => {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    if (Array.isArray(parsed)) {
-                        globalState.properties = parsed;
-                        globalState.updatedAt = Date.now();
-                    } else if (parsed.properties && Array.isArray(parsed.properties)) {
-                        globalState = parsed;
-                        if (!globalState.updatedAt) globalState.updatedAt = Date.now();
-                    } else {
-                        throw new Error("Formato inválido");
-                    }
+                    let incomingProps = Array.isArray(parsed) ? parsed : (parsed.properties || []);
+                    
+                    const localIds = new Set(globalState.properties.map(p => p.id));
+                    let added = 0;
+                    
+                    incomingProps.forEach(p => {
+                        if(!localIds.has(p.id)) {
+                            globalState.properties.push(p);
+                            added++;
+                        }
+                    });
+                    
                     saveLocalDb();
                     renderList();
-                    toast("✅ Importado. Tocá 🔄 para subir.", "success");
+                    toast(`✅ Se importaron ${added} propiedades nuevas.`, "success");
                 } catch(err) {
-                    toast("❌ Error al leer el archivo JSON.", "error");
+                    toast("❌ Error al procesar JSON.", "error");
                 }
                 input.value = '';
             };
             reader.readAsText(file);
         }
+
+        // Image compression on-the-fly to avoid LocalStorage / Gist Payload Too Large errors
+        function processImageAttachment(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 800; 
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                    img.onerror = () => reject(new Error('Img error'));
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.triggerImageUpload = function(id) {
+            currentImageUploadId = id;
+            document.getElementById('imageUploadInput').click();
+        };
+
+        document.getElementById('imageUploadInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file || !currentImageUploadId) return;
+            try {
+                const compressedBase64 = await processImageAttachment(file);
+                const prop = globalState.properties.find(p => p.id === currentImageUploadId);
+                if (prop) {
+                    prop.imagen = compressedBase64;
+                    saveLocalDb();
+                    renderList();
+                    toast("Imagen actualizada.", "success");
+                }
+            } catch(err) {
+                toast("Error al procesar imagen.", "error");
+            }
+            this.value = '';
+        });
 
         function getSyncCredentials() {
             let token = localStorage.getItem('re_gh_token');
@@ -645,23 +699,13 @@
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 6000); 
-                    
-                    const res = await fetch(proxyFn(targetUrl), { 
-                        signal: controller.signal,
-                        cache: "no-store"
-                    });
-                    
+                    const res = await fetch(proxyFn(targetUrl), { signal: controller.signal, cache: "no-store" });
                     clearTimeout(timeoutId);
-                    
                     if (res.ok) {
                         const text = await res.text();
-                        if (text && text.length > 1000 && !text.toLowerCase().includes("enable javascript and cookies")) {
-                            return text;
-                        }
+                        if (text && text.length > 1000 && !text.toLowerCase().includes("enable javascript and cookies")) return text;
                     }
-                } catch(e) {
-                    console.warn("Proxy descartado (timeout/bloqueo):", proxyFn(targetUrl));
-                }
+                } catch(e) {}
             }
             throw new Error("Bloqueo de CORS: todos los proxies fallaron.");
         }
@@ -1205,8 +1249,10 @@
                             <a href="${generateGpsLink(p, p.latitude, p.longitude)}" target="_blank" class="action-btn school-btn">GPS</a>
                             <button onclick="openVisitModal('${p.id}')" class="action-btn agendar-btn">Agendar</button>
                             
+                            <button onclick="triggerImageUpload('${p.id}')" class="action-btn foto-btn">📷 Foto</button>
                             <button onclick="toggleStatus('${p.id}')" class="action-btn archive-btn">${btnStatusText}</button>
                             <button onclick="editProperty('${p.id}')" class="action-btn edit-btn">Editar</button>
+                            
                             <button onclick="deleteProperty('${p.id}')" class="action-btn delete-btn">Borrar</button>
                         </div>
                     </div>
