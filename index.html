@@ -638,20 +638,32 @@
                 u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
                 u => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
                 u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-                u => `https://thingproxy.freeboard.io/fetch/${u}`
+                u => `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`
             ];
+            
             for (let proxyFn of proxies) {
                 try {
-                    const res = await fetch(proxyFn(targetUrl), { cache: "no-store", headers: { "Accept": "text/html" } });
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 6000); 
+                    
+                    const res = await fetch(proxyFn(targetUrl), { 
+                        signal: controller.signal,
+                        cache: "no-store"
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
                     if (res.ok) {
                         const text = await res.text();
-                        if (text && text.length > 500) return text;
+                        if (text && text.length > 1000 && !text.toLowerCase().includes("enable javascript and cookies")) {
+                            return text;
+                        }
                     }
                 } catch(e) {
-                    console.warn("Proxy falló:", proxyFn(targetUrl));
+                    console.warn("Proxy descartado (timeout/bloqueo):", proxyFn(targetUrl));
                 }
             }
-            throw new Error("Bloqueo de CORS.");
+            throw new Error("Bloqueo de CORS: todos los proxies fallaron.");
         }
 
         function extractPropertyData(text, url) {
@@ -977,7 +989,7 @@
                     <div style="font-size:11px;color:#666;margin-bottom:2px;line-height:1.2;">📍 ${p.direccion}</div>
                     ${approxTag}
                     <div style="display:flex; gap:6px; margin-top:8px;">
-                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Abrir GPS</a>
+                        <a href="${gpsUrl}" target="_blank" style="flex:1; text-align:center; background:var(--accent);color:white;padding:6px 0;border-radius:8px;text-decoration:none;font-size:11px;font-weight:600;">Abrir GPS →</a>
                         <button onclick="fixLocation('${p.id}')" style="flex:1; background:var(--badge-bg); border:1px solid var(--border); color:var(--text-main); padding:6px 0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer;">Corregir Pin</button>
                     </div>
                 </div>
