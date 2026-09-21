@@ -46,7 +46,7 @@
         body { background: var(--bg); color: var(--text-main); padding: calc(env(safe-area-inset-top) + 20px) 20px calc(env(safe-area-inset-bottom) + 20px) 20px; line-height: 1.4; transition: background 0.25s, color 0.25s; letter-spacing: -0.01em; }
         .container { max-width: 1400px; margin: 0 auto; }
         
-        header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); padding-bottom: 14px; }
+        header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); padding-bottom: 14px; }
         h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
         .header-actions { display: flex; gap: 12px; align-items: center; }
@@ -66,16 +66,20 @@
         #themeToggle { background: var(--badge-bg); border: none; border-radius: 50%; font-size: 1rem; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main); transition: transform 0.2s; }
         #themeToggle:active { transform: scale(0.9); }
 
+        .tabs-container { display: flex; background: var(--badge-bg); padding: 4px; border-radius: 12px; margin-bottom: 20px; max-width: 400px; }
+        .tab-btn { flex: 1; border: none; background: transparent; padding: 8px 0; border-radius: 8px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: var(--panel); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
         .panel { background: var(--panel); padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 20px; border: 0.5px solid var(--border-light); }
         .panel p { color: var(--text-muted); font-size: 0.8rem; font-weight: 500; margin-bottom: 12px; }
         
         .input-group { display: flex; gap: 8px; flex-wrap: wrap; }
-        input, select, button { padding: 10px 14px; min-height: 44px; border: 0.5px solid var(--border); border-radius: 12px; font-size: 0.9rem; outline: none; background: var(--badge-bg); color: var(--text-main); font-weight: 500; transition: border-color 0.2s; }
-        input:focus, select:focus { border-color: var(--accent); background: var(--input-bg); }
+        input[type="text"], input[type="date"], input[type="time"], select, textarea, button.input-btn { padding: 10px 14px; min-height: 44px; border: 0.5px solid var(--border); border-radius: 12px; font-size: 0.9rem; outline: none; background: var(--badge-bg); color: var(--text-main); font-weight: 500; transition: border-color 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--input-bg); }
         .input-group input { flex-grow: 1; min-width: 200px; margin: 0; }
-        .input-group button { width: auto; margin: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; border: none; padding: 0 16px; }
-        .input-group button:active { opacity: 0.8; }
-        .input-group button:disabled { background: var(--text-muted); opacity: 0.5; cursor: not-allowed; }
+        .input-group button.input-btn { width: auto; margin: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; border: none; padding: 0 16px; }
+        .input-group button.input-btn:active { opacity: 0.8; }
+        .input-group button.input-btn:disabled { background: var(--text-muted); opacity: 0.5; cursor: not-allowed; }
         
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; max-width: 400px; padding: 0 15px; pointer-events: none; }
         .toast { background: rgba(28, 28, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 0.5px solid rgba(255,255,255,0.1); color: #FFF; font-size: 0.85rem; font-weight: 500; padding: 12px 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-12px); transition: opacity 0.3s, transform 0.3s; text-align: center; }
@@ -88,7 +92,6 @@
         
         .btn-glass { border: none; font-weight: 600; font-size: 0.85rem; min-height: 44px; padding: 8px 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; flex: 1 1 auto; }
         .btn-glass:active { opacity: 0.7; }
-        
         .btn-map { background: rgba(90, 200, 250, 0.12); color: var(--teal); }
 
         .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
@@ -131,12 +134,19 @@
         .cost-item:last-child { border-bottom: none; }
         .cost-item-total { font-weight: 700; color: var(--accent); background: rgba(10, 132, 255, 0.04); }
 
-        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; border-top: 0.5px solid var(--border-light); padding-top: 10px; }
-        .action-btn, .link-btn, .wa-btn, .school-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.7rem; font-weight: 600; text-transform: none; letter-spacing: -0.01em; padding: 4px; min-height: 32px; border-radius: 8px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
-        .action-btn:active, .link-btn:active, .wa-btn:active, .school-btn:active { transform: scale(0.96); }
+        .visit-card { margin-top: 8px; padding: 10px 12px; background: rgba(0,122,255,0.08); border: 0.5px solid rgba(0,122,255,0.2); border-radius: 10px; }
+        .visit-card-title { font-size: 0.65rem; font-weight: 700; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.02em; }
+        .visit-card-date { font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+        .visit-card-notes { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 4px; line-height: 1.3; }
+
+        .card-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; border-top: 0.5px solid var(--border-light); padding-top: 10px; }
+        .action-btn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.7rem; font-weight: 600; padding: 4px; min-height: 32px; border-radius: 8px; text-decoration: none; cursor: pointer; border: 0.5px solid transparent; width: 100%; transition: all 0.2s; }
+        .action-btn:active { transform: scale(0.96); }
         
         .wa-btn { color: var(--whatsapp); border-color: rgba(48,209,88,0.3); background: rgba(48,209,88,0.06); }
         .school-btn { color: var(--school); border-color: rgba(191,90,242,0.3); background: rgba(191,90,242,0.06); }
+        .agendar-btn { color: var(--accent); border-color: rgba(0,122,255,0.3); background: rgba(0,122,255,0.06); }
+        .archive-btn { color: var(--text-main); border-color: var(--border); background: var(--badge-bg); }
         .edit-btn { color: var(--warning); border-color: rgba(255,159,10,0.3); background: rgba(255,159,10,0.06); }
         .delete-btn { color: var(--danger); border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.06); }
 
@@ -149,6 +159,7 @@
         @media (min-width: 768px) { .modal-overlay { align-items: center; padding: 20px; } }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--panel); width: 100%; max-width: 1100px; height: 90vh; display: flex; flex-direction: column; overflow: hidden; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .modal-content.auto-height { height: auto; max-height: 90vh; }
         @media (min-width: 768px) { .modal-content { border-radius: 16px; transform: translateY(20px); border: 0.5px solid var(--border); } }
         .modal-overlay.active .modal-content { transform: translateY(0); }
         
@@ -159,7 +170,7 @@
         #mapContainer { flex-grow: 1; width: 100%; height: 100%; background: var(--bg); min-height: 50vh; }
 
         @media (max-width: 600px) {
-            .input-group button { width: 100%; }
+            .input-group button.input-btn { width: 100%; }
             .filters-grid input { flex: 1 1 100%; }
             .filters-grid select { flex: 1 1 100%; }
             .filters-grid button { width: 100%; }
@@ -183,12 +194,17 @@
                 <button id="themeToggle" title="Toggle Theme">🌓</button>
             </div>
         </header>
+
+        <div class="tabs-container">
+            <button class="tab-btn active" id="tabActiveBtn" onclick="setTab('active')">Activos</button>
+            <button class="tab-btn" id="tabSavedBtn" onclick="setTab('saved')">Saved for later</button>
+        </div>
         
         <div class="panel">
             <p>Ingresa la URL de la publicación (ZonaProp, DIC Propiedades o MercadoLibre)</p>
             <div class="input-group">
                 <input type="text" id="urlInput" placeholder="https://..." autocomplete="off" />
-                <button id="extractBtn">Extraer</button>
+                <button id="extractBtn" class="input-btn">Extraer</button>
             </div>
         </div>
 
@@ -241,6 +257,36 @@
         </div>
     </div>
 
+    <!-- VISIT MODAL -->
+    <div class="modal-overlay" id="visitModal">
+        <div class="modal-content auto-height" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>📅 Agendar Visita</h2>
+                <button class="close-modal" onclick="closeVisitModal()">✕</button>
+            </div>
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Fecha</label>
+                        <input type="date" id="vDate" style="width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Hora</label>
+                        <input type="time" id="vTime" style="width: 100%;">
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Notas de la visita</label>
+                    <textarea id="vNotes" rows="3" placeholder="Ej: Preguntar por expensas reales, estado de cañerías..."></textarea>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="btn-glass" style="background: var(--badge-bg); color: var(--text-main); flex: 1;" onclick="clearVisit()">Limpiar Visita</button>
+                    <button class="btn-glass" style="background: var(--accent); color: white; flex: 2;" onclick="saveVisit()">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const bakedProperties = []; 
 
@@ -275,6 +321,7 @@
         const sortType = document.getElementById('sortType');
 
         let globalState = { updatedAt: 0, properties: [] };
+        let currentTab = 'active'; 
         let dolarBlueRate = 1300; 
 
         let mapInstance = null;
@@ -311,6 +358,13 @@
             el.addEventListener('input', renderList);
             el.addEventListener('change', renderList);
         });
+
+        window.setTab = function(tab) {
+            currentTab = tab;
+            document.getElementById('tabActiveBtn').classList.toggle('active', tab === 'active');
+            document.getElementById('tabSavedBtn').classList.toggle('active', tab === 'saved');
+            renderList();
+        };
 
         function loadLocalDb() {
             const raw = localStorage.getItem('re_global_state');
@@ -647,12 +701,25 @@
                 if (imgM) imagen = imgM[1];
             }
 
-            return { id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras, metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0, zona_ranking: 0, latitude, longitude, imagen, url };
+            return { 
+                id, tipo, direccion, precio, expensas, ambientes, dormitorios, banos, cocheras, 
+                metros_tot, metros_cub, distancia_cole: "", tiempo_cole: "", ranking: 0, zona_ranking: 0, 
+                latitude, longitude, imagen, url,
+                status: 'active', visit_date: '', visit_time: '', visit_notes: ''
+            };
         }
 
         window.deleteProperty = function(id) {
-            if(!confirm("¿Remover esta propiedad?")) return;
+            if(!confirm("¿Remover esta propiedad de la base de datos?")) return;
             globalState.properties = globalState.properties.filter(p => p.id !== id);
+            saveLocalDb();
+            renderList();
+        };
+
+        window.toggleStatus = function(id) {
+            const prop = globalState.properties.find(p => p.id === id);
+            if(!prop) return;
+            prop.status = (prop.status === 'saved') ? 'active' : 'saved';
             saveLocalDb();
             renderList();
         };
@@ -690,6 +757,52 @@
 
             saveLocalDb();
             renderList();
+        };
+
+        let currentVisitId = null;
+        window.openVisitModal = function(id) {
+            const prop = globalState.properties.find(p => p.id === id);
+            if(!prop) return;
+            currentVisitId = id;
+            document.getElementById('vDate').value = prop.visit_date || '';
+            document.getElementById('vTime').value = prop.visit_time || '';
+            document.getElementById('vNotes').value = prop.visit_notes || '';
+            document.getElementById('visitModal').classList.add('active');
+        };
+
+        window.closeVisitModal = function() {
+            document.getElementById('visitModal').classList.remove('active');
+            currentVisitId = null;
+        };
+
+        window.saveVisit = function() {
+            if(!currentVisitId) return;
+            const prop = globalState.properties.find(p => p.id === currentVisitId);
+            if(!prop) return;
+            
+            prop.visit_date = document.getElementById('vDate').value;
+            prop.visit_time = document.getElementById('vTime').value;
+            prop.visit_notes = document.getElementById('vNotes').value.trim();
+            
+            saveLocalDb();
+            renderList();
+            closeVisitModal();
+            toast("Visita agendada.", "success");
+        };
+
+        window.clearVisit = function() {
+            if(!currentVisitId) return;
+            const prop = globalState.properties.find(p => p.id === currentVisitId);
+            if(!prop) return;
+            
+            prop.visit_date = '';
+            prop.visit_time = '';
+            prop.visit_notes = '';
+            
+            saveLocalDb();
+            renderList();
+            closeVisitModal();
+            toast("Visita eliminada.", "success");
         };
 
         window.fixLocation = function(id) {
@@ -961,6 +1074,9 @@
         function getFilteredProperties() {
             const s = filterText.value.toLowerCase(), t = filterType.value, c = filterCurrency.value;
             return globalState.properties.filter(p => {
+                const propStatus = p.status || 'active';
+                if (propStatus !== currentTab) return false;
+                
                 const matchTxt = (p.direccion || "").toLowerCase().includes(s) || (p.tipo || "").toLowerCase().includes(s);
                 const matchType = t === "ALL" || (p.tipo || "").includes(t);
                 const isUsd = (p.precio || "").toUpperCase().includes("US");
@@ -974,7 +1090,8 @@
             let processedProps = getFilteredProperties();
             
             const totalSpan = document.getElementById('topTotalCount');
-            if(totalSpan) totalSpan.innerText = `[ ${globalState.properties.length} propiedades en total ]`;
+            const statusLabel = currentTab === 'active' ? 'activos' : 'guardados';
+            if(totalSpan) totalSpan.innerText = `[ ${processedProps.length} ${statusLabel} ]`;
 
             if (sortTerm !== 'date_desc') {
                 processedProps.sort((a, b) => {
@@ -990,7 +1107,7 @@
             }
 
             if (processedProps.length === 0) {
-                list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">No hay resultados.</div>';
+                list.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:40px;grid-column:1/-1;">No hay inmuebles ${statusLabel}.</div>`;
                 return;
             }
             
@@ -1003,6 +1120,17 @@
                 const zonaStars = [1,2,3,4,5].map(s => `<span class="star ${s <= (p.zona_ranking || 0) ? 'active-zona' : ''}" onclick="setZonaRanking('${p.id}', ${s})">★</span>`).join('');
                 
                 const escapedAddress = (p.direccion || "").replace(/'/g, "\\'");
+                const btnStatusText = (p.status === 'saved') ? 'Activar' : 'Archivar';
+
+                let visitHtml = '';
+                if (p.visit_date) {
+                    visitHtml = `
+                    <div class="visit-card">
+                        <div class="visit-card-title">📅 VISITA AGENDADA</div>
+                        <div class="visit-card-date">${p.visit_date} ${p.visit_time ? 'a las ' + p.visit_time : ''}</div>
+                        ${p.visit_notes ? `<div class="visit-card-notes">${p.visit_notes}</div>` : ''}
+                    </div>`;
+                }
 
                 return `
                 <div class="card">
@@ -1045,10 +1173,14 @@
                             ${mk("Coch", p.cocheras)}
                         </div>
                         ${generateCostsHtml(p.precio, p.direccion)}
+                        ${visitHtml}
                         
                         <div class="card-actions">
-                            <a href="${generateWaLink(p)}" target="_blank" class="wa-btn">WA</a>
-                            <a href="${generateGpsLink(p, p.latitude, p.longitude)}" target="_blank" class="school-btn">GPS</a>
+                            <a href="${generateWaLink(p)}" target="_blank" class="action-btn wa-btn">WA</a>
+                            <a href="${generateGpsLink(p, p.latitude, p.longitude)}" target="_blank" class="action-btn school-btn">GPS</a>
+                            <button onclick="openVisitModal('${p.id}')" class="action-btn agendar-btn">Agendar</button>
+                            
+                            <button onclick="toggleStatus('${p.id}')" class="action-btn archive-btn">${btnStatusText}</button>
                             <button onclick="editProperty('${p.id}')" class="action-btn edit-btn">Editar</button>
                             <button onclick="deleteProperty('${p.id}')" class="action-btn delete-btn">Borrar</button>
                         </div>
